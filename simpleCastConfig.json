@@ -1,0 +1,7 @@
+{
+    "serverName": "SimpleCastDefaultName",
+    "usePINAuthentication": true,
+    "allowAudioRedirection": false,
+    "allowedPskList": ["psk1", "psk2"]
+}
+  
