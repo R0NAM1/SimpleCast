@@ -42,12 +42,15 @@ async def startRTCPeering(serverIpAddress):
     clientPeer.addTransceiver(videoPLayerTrack, direction='sendonly')
     
     # Add data channel
-    dataChannel = clientPeer.createDataChannel("chat")
+    dataChannel = clientPeer.createDataChannel("datachannel")
     
     @dataChannel.on("open")
     def onOpen():
-        print("Data Channel Opened")
-        dataChannel.send("ThisIsDataChannel!")
+        print("Data Channel Opened, sending Message")
+        # While true, send every second
+        # while True:
+        dataChannel.send("Hello from client")
+            # time.sleep(1)
         
     @dataChannel.on("message")
     def on_message(message):
@@ -63,11 +66,9 @@ async def startRTCPeering(serverIpAddress):
     session = aiohttp.ClientSession()
     
     # SEND POST, wait for response
-    serverDataRecieved = await session.post(serverPostAddress, data=str(sdpOffer.sdp)) 
+    serverDataRecieved = await session.post(serverPostAddress, data=str(clientPeer.localDescription.sdp)) 
 
     serverTextReceived = (await serverDataRecieved.text())
-            
-    print("Got SDP response")
             
     # Set server description
     serverSDPResponseObject = RTCSessionDescription(serverTextReceived, 'answer')
@@ -77,7 +78,7 @@ async def startRTCPeering(serverIpAddress):
     # Frames should start being sent now, are they? Do I have to do that manually?
 
     print("State:")
-    print(clientPeer.signalingState)
+    print(clientPeer.sctp.state)
 
     # Close session
     await session.close()
@@ -315,16 +316,10 @@ async def startConnecting(serverIndex):
         await session.close()
                 
         # Wait on response:accepted to move to rtc connection
-        if amIAuthText == 'response:accepted':
-            # loop = asyncio.get_event_loop()
-            # # Push to another thread?
-            # loop.run_until_complete(startRTCPeering(combinedList[serverIndex][0]))
-            clientPeer = await startRTCPeering(combinedList[serverIndex][0])
-            
-            return clientPeer
-            
-            # loop.run_forever()
-            
+        if amIAuthText == 'response:accepted':            
+            # Return True to send RTP
+            return combinedList[serverIndex][0]
+        
         elif amIAuthText == 'response:rejected':
             print("Connection rejected, restarting program")
             time.sleep(3)
@@ -387,7 +382,7 @@ def singleBroadcastScan(secondsToScan):
         
         # Already exists, does not add
 
-async def programStart():
+def programStart():
     # Check local config for static server addresses and this clients PSK
     readConfigFile()
     
@@ -401,21 +396,44 @@ async def programStart():
     clearConsoleScreen()
     
     # Show broadcast found servers and servers from config
-    selectedIndex = await showAndSelectSelectableServers()
+    loop = asyncio.get_event_loop()
+    
+    selectedIndex = loop.run_until_complete(showAndSelectSelectableServers())
 
     clearConsoleScreen()
     
-    clientPeer = await startConnecting(selectedIndex)
+    serverIpAddress = loop.run_until_complete(startConnecting(selectedIndex))
+    # loop.run_forever()
     
-    # Keep running forever?
+    rtcLoop = asyncio.new_event_loop()
+    
+    clientPeer = rtcLoop.run_until_complete(startRTCPeering(serverIpAddress))
+    # Push to another thread
+    rtcThread = threading.Thread(target=(rtcLoop.run_forever))
+    rtcThread.start()
+    
     while True:
-        print("Status: " + str((clientPeer.signalingState)))
-        await asyncio.sleep(1)
+        print("State:")
+        print(clientPeer.sctp.state)
+        isQ = input("Press Q to exit, other to check: ")
+        
+        if isQ == 'Q' or isQ == 'q':
+            # rtcLoop.run_until_complete(clientPeer.close())
+            # Kill thread somehow
+            # rtcThread.
+            
+            print("New State: " + str(clientPeer.sctp.statee))
+            
+            break
+
+
+    # # Keep running forever?
+    # while True:
+    #     print("Status: " + str((clientPeer.signalingState)))
+    #     await asyncio.sleep(1)
 
     # Connecting with options, show connected interface
     # Start transmiting audio and video to server
 
 if __name__ == '__main__':
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(programStart())
-    asyncio.run(programStart())
+    programStart()

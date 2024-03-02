@@ -49,9 +49,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
     if (sdpObjectOriginIP == clientIP) and (currentConnection == 'connected'):
         
         print("=== Client ALLOWED, start RTC ===")
-        
-        print(sdpObjectText)
-        
+                
         stunServer = RTCIceServer(
             # urls=["stun:" + thisServersIpAddress]
             urls=["stun:10.42.0.8"]
@@ -72,16 +70,23 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             # Set up event listeners for the incoming data channel
             @channel.on("open")
             def on_open():
-                print("Data channel is open. You can start sending messages.")
-                channel.send("Hello from the server!")
+                print("Data channel is open. Waiting for message")
+                # channel.send("Hello from the server!")
             
             @channel.on("message")
             def on_message(message):
                 print(f"Message received: {message}")
+                print("Responding")
+                channel.send("Hello from server!")
             
         @serverPeer.on("track")
         def onTrack(track):
             print("Got track: " + str(track.kind))
+            # DOES NOT WORK, I don't know why
+            # @track.on("frame")
+            # def on_frame(frame):
+            #     # This function will be called when a frame is received
+            #     print("Received frame: " + str(frame))
         
         serverPeer.addTransceiver('video', direction='recvonly')
 
@@ -101,7 +106,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         print("Generated SDP response, returning")
                 
         print("State:")
-        print(serverPeer.signalingState)
+        print(serverPeer.sctp.state)
         
         # Schedule task to run to gather frames
         
@@ -121,7 +126,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         sdpObject.app.loop.create_task(processFrames())
         
         # Return SDP
-        return web.Response(content_type="text/html", text=clientAnswer.sdp)
+        return web.Response(content_type="text/html", text=serverPeer.localDescription.sdp)
                 
     else:
         print("=== Client DENIED, notAuthorized ===")
