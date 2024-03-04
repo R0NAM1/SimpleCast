@@ -1,43 +1,46 @@
-import time, socket, json, os, random, struct, queue, ast, asyncio
+import time, socket, json, os, random, struct, queue, ast, asyncio, pygame
 from threading import Thread, active_count
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCConfiguration, RTCIceServer, RTCDataChannel, RTCRtpCodecParameters
 from aiortc.mediastreams import VideoFrame
 from aiortc.contrib.media import MediaPlayer, MediaBlackhole, MediaStreamTrack, MediaRelay
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiohttp import web
+from datetime import datetime
 
+global clientIP, latestVideoFrame, clientHostname, processFrames, pingPongTime, screenObject, generatedPin, thisServersIpAddress, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, serverName, currentConnection
+# Global variables initialization
 
-global clientIP, generatedPin, thisServersIpAddress, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, serverName, currentConnection
+# Client info variables
+currentConnection = 'open'
+clientIP = ''
+generatedPin = 'False'
+clientHostname = ''
 
-sendBroadcastPacket = True
-
-# This server should be set at a static address, the 'public' one that will be used on your network
-
-thisServersIpAddress = '10.42.0.8'
-
-# Audio Redirection default is false
+# Config variables
 allowAudioRedirection = False
-
-# Default to true
 usePINAuthentication = True
-
-# Initialize PSK List
 allowedPskList = []
-
-# Default to noName
 serverName = 'noNameFoundSomethingIsWrong'
 
-# Current connection information,
-# 'open' by default, 'connecting' for client connecting, 'connected' for client being connected
+# Server variables
+sendBroadcastPacket = True
+# Needed so that we can set STUN correctly
+thisServersIpAddress = '10.42.0.8'
+# Latest videoFrame object from AioRTC
+latestVideoFrame = None
+# PyGame screen object
+screenObject = None
+# AioRTC PcObject
+globalPcObject = None
+# Ping pong object to track active connection, if above 3 seconds, assume connection lost
+pingPongTime = 0
+# Process Frames?
+processFrames = False
 
-currentConnection = 'open'
-
-generatedPin = 'False'
-clientIP = ''
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
 async def startReceivingScreenDataOverRTP(sdpObject):
-    global thisServersIpAddress
+    global thisServersIpAddress, latestVideoFrame, screenObject, globalPcObject, pingPongTime
     
     sdpObjectText = await sdpObject.text()
     sdpObjectOriginIP = sdpObject.remote
@@ -49,20 +52,13 @@ async def startReceivingScreenDataOverRTP(sdpObject):
     if (sdpObjectOriginIP == clientIP) and (currentConnection == 'connected'):
         
         print("=== Client ALLOWED, start RTC ===")
-                
-        stunServer = RTCIceServer(
-            # urls=["stun:" + thisServersIpAddress]
-            urls=["stun:10.42.0.8"]
-        )
-        
-        config = RTCConfiguration(
-            iceServers=[stunServer]
-        )
-        
-        
         # Create local peer object, set remote peer to clientSdpOfferSessionDescription
-        serverPeer = RTCPeerConnection(configuration=config)
+        stunServer = "stun:10.42.0.8"
+        serverPeer = RTCPeerConnection(configuration=RTCConfiguration(
+            iceServers=[RTCIceServer(
+                urls=[stunServer])]))
         
+        globalPcObject = serverPeer
         @serverPeer.on("datachannel")
         def on_datachannel(channel):
             print("Data channel received.")
@@ -70,31 +66,29 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             # Set up event listeners for the incoming data channel
             @channel.on("open")
             def on_open():
-                print("Data channel is open. Waiting for message")
+                print("Data channel is open. Waiting for ping")
                 # channel.send("Hello from the server!")
             
             @channel.on("message")
             def on_message(message):
-                print(f"Message received: {message}")
-                print("Responding")
-                channel.send("Hello from server!")
-            
-        @serverPeer.on("track")
-        def onTrack(track):
-            print("Got track: " + str(track.kind))
-            # DOES NOT WORK, I don't know why
-            # @track.on("frame")
-            # def on_frame(frame):
-            #     # This function will be called when a frame is received
-            #     print("Received frame: " + str(frame))
-        
+                global pingPongTime
+                # Wait for ping
+                if message == "ping":
+                    # print("Ping!")
+                    # Reset pingPongTime
+                    pingPongTime = time.time()
+                    channel.send("pong")
+                    # print("Pong!")
+
         serverPeer.addTransceiver('video', direction='recvonly')
+
+        # If Audio is allowed, add transceiver for it
+        if allowAudioRedirection == True:
+          serverPeer.addTransceiver('audio', direction='recvonly')
 
         clientSdpOfferSessionDescription = RTCSessionDescription(sdpObjectText, 'offer')
         print("Got SDP offer from client, generating response SDP")
-        
-        print("Loading into RTCSessionDescription")
-        
+            
         await serverPeer.setRemoteDescription(clientSdpOfferSessionDescription)
         
         # Create answer
@@ -104,41 +98,69 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         await serverPeer.setLocalDescription(clientAnswer)
         
         print("Generated SDP response, returning")
-                
-        print("State:")
-        print(serverPeer.sctp.state)
         
         # Schedule task to run to gather frames
         
         async def processFrames():
+            global latestVideoFrame, globalPcObject, processFrames
+            # Wait one second for sctp to establish
+            await asyncio.sleep(1)
             print("Start process frames")
             receivers = serverPeer.getReceivers()
+            
+            lastFrame = time.time()
         
-            for rec in receivers:
-                if rec.track.kind == "video":
-                    while True:
-                        print("Waiting for frame")
-                        frame = await rec.track.recv()
-                        print("Frame:")
-                        print(frame)
+            processFrames = True
+            while processFrames:
+                for rec in receivers:
+                # Wrap over video and audio receivers, grab frames from each
+                    if rec.track.kind == "video":
+                    # Wrap in try statement, if Exception ignore
+                        try:
+                            # Load video, wrap aronud timeout so we don't block forever, 5 seconds
+                            latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
+                            calc = time.time() - lastFrame
+                            lastFrame = time.time()
+                            print("Got frame, time diff: " + str(calc))
+                                
+                        except Exception as e:
+                            print("MediaPlayer Failed, " + str(e))
+                            print("Closing peer")
+                            await globalPcObject.close()
+                            print("Setting initial values")
+                            processFrames = False
+                            setInitalValues()
+                     
+                    # print("Now try audio")
+                           
+                    # Check audio
+                    if rec.track.kind == "audio":
+                        # Wrap in try statement, if Exception ignore
+                        try:
+                            # Load video, wrap aronud timeout so we don't block forever, 5 seconds
+                            latestAudioFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
+                            # ON audio frame receive, play immediently,
+                            print("Got audio frame! " + str(latestAudioFrame))
+                                
+                        except Exception as e:
+                            print("AudioMediaPlayer Failed, pass, " + str(e))
+                            pass 
+            
             
         # Create said task under this request
         sdpObject.app.loop.create_task(processFrames())
+        
+        # Set ping pong time initially
+        pingPongTime = time.time()
         
         # Return SDP
         return web.Response(content_type="text/html", text=serverPeer.localDescription.sdp)
                 
     else:
         print("=== Client DENIED, notAuthorized ===")
-        return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
+        # 418 Teapot, 401 not authorized
+        return web.Response(content_type="text/html", status=418, text="response:notAuthorized")
 
-    
-    
-    
-    
-    
-
-    pass
 
 # Read configuration file, set global variables based on that
 def readConfigurationFile():
@@ -203,7 +225,7 @@ def sendBroadcastPacketWhileTrue():
 # If we use PIN Authentication, check if PSK is allowed, if not generate PIN
 # Wait for client to send connect command, with or without pin
 async def processHTTPCommand(commandRequest):
-    global usePINAuthentication, allowedPskList, generatedPin, clientIP, serverName, currentConnection
+    global usePINAuthentication, allowedPskList, generatedPin, clientIP, serverName, currentConnection, clientHostname
                 
     # Main loop, wait for connection on port, check if currentConnection is 'open'
     # If so continue, if not drop connection with 'error:connected'      
@@ -237,6 +259,9 @@ async def processHTTPCommand(commandRequest):
         # Set currentConnection to connecting
         currentConnection = 'connecting'
         clientIP = thisClientIP
+        
+        # Set hostname
+        clientHostname = splitData[1]
                             
         # Repond to the client telling it what we can do
         # pinIfRequired|audioRedirection
@@ -288,9 +313,6 @@ async def processHTTPCommand(commandRequest):
                 # # Start sending screen data
                 print('--- No PIN Generated, Auto-Connecting ---')
                 return web.Response(content_type="text/html", text="response:accepted")
-                # loop.run_until_complete(startReceivingScreenDataOverRTP(address[0], connectionObject))
-                # loop.run_forever()
-                pass
               
             else:
                 # PIN was generated, check if correct
@@ -299,8 +321,6 @@ async def processHTTPCommand(commandRequest):
                     print('--- PIN Accepted, connecting...')
                     currentConnection = 'connected'
                     return web.Response(content_type="text/html", text="response:accepted")
-                    # loop.run_until_complete(startReceivingScreenDataOverRTP(address[0], connectionObject))
-                    # loop.run_forever()
                 else:
                     print('--- PIN REJECTED')
                     return web.Response(content_type="text/html", text="response:rejected")
@@ -308,12 +328,275 @@ async def processHTTPCommand(commandRequest):
         else:
             # Client not authed, reject
             return web.Response(content_type="text/html", text="response:rejected")
+
+# Draw current connecting client and PIN if found, 
+def drawConnectingInformation():
+    global screenObject, clientHostname, generatedPin
+    
+    # New font object
+    font = pygame.font.Font(None, 40)
+    fontPin = pygame.font.Font(None, 210)
+    
+    connectingString = (clientHostname + " is attemping to connect...")
+    
+    boxHeight = 300
+    boxWidth = 700
+    
+    center = screenObject.get_rect().center
+    boxX = center[0] - (boxWidth // 2)
+    boxY = center[1] - (boxHeight // 2)
+    
+    # Draw to screen does not alpha
+    # pygame.draw.rect(screenObject, (46, 46, 46, 0), (boxX, boxY, boxWidth, boxHeight))
+    
+    # Draw to screen does alpha
+    rectangleObject = pygame.Surface((boxWidth, boxHeight))
+    # Set alpha
+    rectangleObject.set_alpha(200)
+    # Fill with color
+    rectangleObject.fill((46, 46, 46))
+    # Blit onto screen
+    screenObject.blit(rectangleObject, (boxX, boxY))
+    
+    # Start drawing text
+    connectionText = font.render(connectingString, True, (255, 255, 255))
+    # Blit
+    screenObject.blit(connectionText, (boxX, boxY))
+    
+    pinString = 'READY'
+    
+    if generatedPin != 'False':
+        # If a pin was not generated, show READY string
+        pinString = str(generatedPin)
+        
+    # Draw text
+    pinText = fontPin.render(pinString, True, (255, 255, 255))
+    # Blit
+    screenObject.blit(pinText, ((boxX + (boxWidth // 2) - (pinText.get_width() // 2)), (boxY + (boxHeight // 2) - (pinText.get_height() // 2))))
+    
+# Draw information to display at all times while not connecting
+# Name, Time, IP Address
+def pyGameDrawInformation(font):
+    
+        connectionStringTop = 'To cast, download the'
+        connectionStringBottom = 'SimpleCast app and select'
+    
+        # Show current time
+        # Get time
+        currentTime = datetime.now()
+        # Convert to 12 hour format
+        dateString = currentTime.strftime("%A, %B %d, %Y")
+        twelveHourString = currentTime.strftime("%I:%M:%S %p")
+        # Render text
+        timeTextWhite = font.render(twelveHourString, True, (255, 255, 255))
+        # Render bold background
+        font.set_bold(True)
+        timeTextBlack = font.render(twelveHourString, True, (0, 0, 0))
+        font.set_bold(False)
+
+        # Render connection text top
+        connectionTextTopWhite = font.render(connectionStringTop, True, (255, 255, 255))
+        font.set_bold(True)
+        connectionTextTopBlack = font.render(connectionStringTop, True, (0, 0, 0))
+        font.set_bold(False)
+
+        # Render connection text top
+        connectionTextBottomWhite = font.render(connectionStringBottom, True, (255, 255, 255))
+        font.set_bold(True)
+        connectionTextBottomBlack = font.render(connectionStringBottom, True, (0, 0, 0))
+        font.set_bold(False)
+
+        # Render name text
+        serverNameTextWhite = font.render(serverName, True, (255, 255, 255))
+        # Render bold background
+        font.set_bold(True)
+        serverNameTextBlack = font.render(serverName, True, (0, 0, 0))
+        font.set_bold(False)
+        
+        # Render date 
+        dateTextWhite = font.render(dateString, True, (255, 255, 255))
+        # Render bold background
+        font.set_bold(True)
+        dateTextBlack = font.render(dateString, True, (0, 0, 0))
+        font.set_bold(False)
+
+        # Eventually make into a function (writeBoldText?) 
+
+        # Calculate positions, top left is 0, 0 as origin. Use inset of 5 pixels so that way it's not on the edge
+        # Top right, for time
+        # Offset by dateTextWhite.get_height + 5
+        timeTextPositionBlack = ((screenObject.get_width() - timeTextWhite.get_width()) - 5, (0 + 10) + dateTextWhite.get_height())
+        timeTextPositionWhite = ((screenObject.get_width() - timeTextWhite.get_width()) - 5, (3 + 10) + dateTextWhite.get_height())
+        
+        # Top right, date
+        dateTextPositionBlack = ((screenObject.get_width() - dateTextWhite.get_width()) - 5, (0 + 5))
+        dateTextPositionWhite = ((screenObject.get_width() - dateTextWhite.get_width()) - 5, (3 + 5))
+        
+        # Bottom left, for name
+        serverNamePositionBlack = ((0 + 5), ((screenObject.get_height() - serverNameTextWhite.get_height()) - (0 + 5)))
+        serverNamePositionWhite = ((0 + 5), ((screenObject.get_height() - serverNameTextWhite.get_height()) - (3 + 5)))
+        
+        # Position for connection text top
+        connectionTextPositionBlackTop = ((0 + 5), ((screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height() + connectionTextBottomWhite.get_height())) - (0 + 10)))
+        connectionTextPositionWhiteTop = ((0 + 5), ((screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height() + connectionTextBottomWhite.get_height())) - (3 + 10)))
+             
+        # Position for connection text top
+        connectionTextPositionBlackBottom = ((0 + 5), ((screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height())) - (0 + 10)))
+        connectionTextPositionWhiteBottom = ((0 + 5), ((screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height())) - (3 + 10)))
+        
+        # Blit both it to screen
+        # Draw date text with outline, 1st top right
+        screenObject.blit(dateTextBlack, dateTextPositionBlack)
+        screenObject.blit(dateTextWhite, dateTextPositionWhite)
+        
+        # Draw time text with outline, 2nd top right
+        screenObject.blit(timeTextBlack, timeTextPositionBlack)
+        screenObject.blit(timeTextWhite, timeTextPositionWhite)
+        # Draw server name with outline, bottom left
+        screenObject.blit(serverNameTextBlack, serverNamePositionBlack)
+        screenObject.blit(serverNameTextWhite, serverNamePositionWhite)
+        # Draw connection text, bottom left
+        screenObject.blit(connectionTextTopBlack, connectionTextPositionBlackTop)
+        screenObject.blit(connectionTextTopWhite, connectionTextPositionWhiteTop)
+        # Draw connectionBottom text, bottom left
+        screenObject.blit(connectionTextBottomBlack, connectionTextPositionBlackBottom)
+        screenObject.blit(connectionTextBottomWhite, connectionTextPositionWhiteBottom)
+
+# Seperate Threaded function that constantly updates the GUI
+# open means show slideshow/time/ip/friendlyName
+# connecting means show psk if one is generated and who is trying to connect
+# connected means show frameBuffer
+def pyGameConstantUpdating():
+    global currentConnection, serverName, latestVideoFrame, globalPcObject, pingPongTime
+    
+    # Load display info
+    displayInfo = pygame.display.Info()
+    
+    # Load static background image
+    # Eventually offload to slideshow function that loads images in folder and fades between them
+    # Load background image, need to convert to surface object
+    backgroundImage = pygame.image.load('background.jpg').convert()
+    backgroundImage = pygame.transform.scale(backgroundImage, (displayInfo.current_w, displayInfo.current_h))
+        
+    # Create time font object
+    font = pygame.font.Font(None, 80)
+    
+    # Constant check, wrap in while True for now
+    
+    # While program is running
+    while True:
+        
+        # Check currentConnection
+        if currentConnection == 'open':
+            # Is open, so we show background, current time, friendly name
+            # Show background
+            screenObject.blit(backgroundImage, (0, 0))
+            
+            # Draw Server Information
+            pyGameDrawInformation(font)
+
+            ## END OF OPEN
+            
+        elif currentConnection == 'connecting':
+            # A client is connecting, same as open plus draw box in middle that shows PIN if required, if all 0's, just show host connecting
+            # Draw background
+            screenObject.blit(backgroundImage, (0, 0))
+            
+            # Draw information
+            pyGameDrawInformation(font)
+            
+            # Draw PIN box with current host connecting
+            drawConnectingInformation()
+            
+            ## END OF CONNECTING
+            
+        elif currentConnection == 'connected':
+            # Have connection, take latestVideoFrame and convert to surface object to draw on screen
+            # Wrap in try, in case of exception since latestVideoFrame is none by default
+            try:
+                # Transform VideoFrame object to RGB image in a bytearray                
+                frameArray = latestVideoFrame.to_rgb().to_ndarray()
+                # Make into a PyGame Surface
+                frameSurface = pygame.surfarray.make_surface(frameArray)
+                # Rotate 90 degrees to fix
+                frameSurface = pygame.transform.rotate(frameSurface, 90)
+                # Flip upsidedown to flip image
+                frameSurface = pygame.transform.flip(frameSurface, False, True)
+                # Resize surface to fit display
+                frameSurface = pygame.transform.scale(frameSurface, (displayInfo.current_w, displayInfo.current_h))
+                
+                # Draw frameSurface to PyGame
+                screenObject.blit(frameSurface, (0, 0))
+                
+            except Exception as e:
+                # Called if latestVideoFrame is None usually, is ok to pass
+                # print("Exception: " + str(e))
+                pass
+
+
+        # End of connection specific logic, all things drawn, now update display
+        pygame.display.flip() 
+    
+    # Wrap around to while
+        
+# Initialize empty pygame window, hidden
+def pygameInitializeBackgroundWaiting():
+    global screenObject, serverName
+    # Initialize pygame
+    pygame.init()
+    
+    # Change Window name and Icon
+    programIcon = pygame.image.load('logo-pallete.png')
+    pygame.display.set_icon(programIcon)
+    
+    # Set name
+    pygame.display.set_caption("SimpleCast Receiver | " + str(serverName))
+    
+    # Set display mode
+    screenObject = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    
+    # Get display info
+    displayInfo = pygame.display.Info()
+    
+    # Load background image, need to convert to surface object
+    backgroundImage = pygame.image.load('background.jpg').convert()
+    # Scale image to display
+    backgroundImage = pygame.transform.scale(backgroundImage, (displayInfo.current_w, displayInfo.current_h))
+    # 'Blit' to screenObject
+    screenObject.blit(backgroundImage, (0, 0))
+    
+    # Update display
+    pygame.display.flip()    
+    
+    # Start seperate thread to update screen depending on connectionStatus?
+    pyGameUpdateThread = Thread(target=pyGameConstantUpdating)
+    pyGameUpdateThread.start()
+        
+        
+# Set initial connection values, 
+def setInitalValues():
+    global currentConnection, clientIP, generatedPin, clientHostname
+    # Reset connection to open
+    currentConnection = 'open'
+    # Reset client IP to empty
+    clientIP = ''
+    # Reset Generated PIN
+    generatedPin = 'False'
+    # Reset client hostname
+    clientHostname = ''
+        
 # Program start
 if __name__ == '__main__':
+    # Initialize vars
+    setInitalValues()
+    
+    # Initialize PyGame with Frame Update Thread
+    pygameInitializeBackgroundWaiting()
+    
     # Read configuration data into memory
     readConfigurationFile()
     
-    # Start seperate thread for broadcast packets, eventually make async
+    # Start seperate thread for broadcast packets
     broadcastThread = Thread(target=sendBroadcastPacketWhileTrue)
     broadcastThread.start()
     
