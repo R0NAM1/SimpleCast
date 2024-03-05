@@ -1,60 +1,57 @@
-import time, socket, os, uuid, mss, json, asyncio, threading, aiohttp
+import time, socket, os, uuid, mss, json, asyncio, threading, aiohttp, tracemalloc
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCConfiguration, RTCIceServer, RTCDataChannel, RTCRtpCodecParameters
 from aiortc.mediastreams import VideoFrame
 from aiortc.contrib.media import MediaPlayer, MediaBlackhole, MediaStreamTrack, MediaRelay
 from aiortc.rtcrtpsender import RTCRtpSender
 # Non GUI version of SimpleCast client to get basics working
 
-global screenFrameBufferQueue, clientPsk, serverPinAuthNeeded, serverAudioAllowed
+global clientPsk, configServerList, serverPinAuthNeeded, serverAudioAllowed, willSendAudio, foundServers, globalPcObject
 
-foundServers = [];
-
+# Initialize Global Variables
+# Config variables
 clientPsk = ''
 configServerList = []
 
+# Server settings
 serverPinAuthNeeded = False
 serverAudioAllowed = False
+
+# Other
 willSendAudio = False
+foundServers = []
+globalPcObject = None
 
 async def startRTCPeering(serverIpAddress):
+    global globalPcObject
     print("Should have authed, now attempting RTC")
     
     serverPostAddress = 'http://' + serverIpAddress + ':4825/sdpOffer'
     
     # Define config
-    stunServer = RTCIceServer(
-        # urls=["stun:" + serverIpAddress]
-        urls=["stun:10.42.0.8"] # Test ICE server
-    )
-    
-    config = RTCConfiguration(
-        iceServers=[stunServer]
-    )
+    stunServer = "stun:10.42.0.8"
     
     # Create peer connection
-    clientPeer = RTCPeerConnection(configuration=config)
+    clientPeer = RTCPeerConnection(configuration=RTCConfiguration(
+            iceServers=[RTCIceServer(
+                urls=[stunServer])]))
+    
+    globalPcObject = clientPeer
     
     # Add media tracks
     # TEMP, use video mp4 for now, change to mss later
     tmpPath = ('tmpVideo.webm') # Pootis Engage, great test video
-    videoPLayerTrack = (MediaPlayer(tmpPath)).video
+    # NEVERMIND, any LARGE video file causes Memory 'leak', more of frames staying in memory
+    # NEVERMIND THE SEQUEL, don't call two different MediaPlay instances for getting seperate tracks, causes memory fuckery
+    mediaPlayer = MediaPlayer(tmpPath)
+    videoPLayerTrack = mediaPlayer.video
+    audioPLayerTrack = mediaPlayer.audio
     # clientPeer.addTrack(videoPLayerTrack)
     clientPeer.addTransceiver(videoPLayerTrack, direction='sendonly')
+    clientPeer.addTransceiver(audioPLayerTrack, direction='sendonly')
     
     # Add data channel
+    # DOES NOT WORK WITHOUT DATACHANNEL, I again, don't know why :/
     dataChannel = clientPeer.createDataChannel("datachannel")
-    
-    @dataChannel.on("open")
-    def onOpen():
-        print("Data Channel Opened, sending Message")
-        # While true, send every second
-        # while True:
-        dataChannel.send("Hello from client")
-            # time.sleep(1)
-        
-    @dataChannel.on("message")
-    def on_message(message):
-        print(f"Message received: {message}")
     
     # Create SDP offer
     sdpOffer = await clientPeer.createOffer()
@@ -74,21 +71,9 @@ async def startRTCPeering(serverIpAddress):
     serverSDPResponseObject = RTCSessionDescription(serverTextReceived, 'answer')
 
     await clientPeer.setRemoteDescription(serverSDPResponseObject)
-    
-    # Frames should start being sent now, are they? Do I have to do that manually?
 
-    print("State:")
-    print(clientPeer.sctp.state)
-
-    # Close session
+    # Close HTTP session
     await session.close()
-
-    # Call recv
-    # print("At sin")
-    # while True:
-    #     # Temp keep running
-    #     pass
-    #     print(await videoPLayer.video.recv())
 
     # Return client peer
     return clientPeer
@@ -104,6 +89,7 @@ def clearConsoleScreen():
         
 # Read config json file, has psk and array of IP addresses for static servers
 # If none exists, create empty one with new PSK
+# Eventually add last checked settings, remember audio redirection and other
 def readConfigFile():
     global configServerList, clientPsk
     # First verify if file exists, if not create empty json file and generate PSK
@@ -150,7 +136,7 @@ def readConfigFile():
         clientPsk = readConfigJsonObject['psk']
         configServerList = readConfigJsonObject['serverList']
         
-        # Done reading config
+    # Done reading config
     
 # Function to draw selection screen, takes in array with IP and Friendly Name
 async def showAndSelectSelectableServers():
@@ -192,17 +178,30 @@ async def showAndSelectSelectableServers():
         # # Add one to index
         arrayIndex =+ 1
     
+    # Print ReScan option
+    # print("====================================")
+    # print("R) Re-Scan")
+    
     # Let user select number input, if not a number below of equal to arrayIndex, then try again
 
     while True:
-        
+        # While true until valid
         try:
-            selectedServerIndex = int(input("Select Server: "))
-                        
-            if selectedServerIndex <= arrayIndex:
-                return selectedServerIndex
+            selectedServerIndex = (input("Select Option: "))
+            
+            if selectedServerIndex == 'r' or selectedServerIndex == 'R':
+                pass
+                # Re run scan broadcast
+                # singleBroadcastScan(5)
+
             else:
-                print(str(selectedServerIndex) + " is not a valid server index, try again...")
+                # Convert to int
+                selectedServerIndex = int(selectedServerIndex)
+                            
+                if selectedServerIndex <= arrayIndex:
+                    return selectedServerIndex
+                else:
+                    print(str(selectedServerIndex) + " is not a valid server index, try again...")
 
         except Exception:
                 print("Not an integer, try again...")
@@ -330,6 +329,10 @@ async def startConnecting(serverIndex):
 # Listens on port 1337 (Yes, and I'm not changing it.)
 def singleBroadcastScan(secondsToScan):
     global foundServers
+    
+    # Clear screen
+    clearConsoleScreen()
+    
     # Reset found servers
     foundServers = []
     
@@ -381,8 +384,12 @@ def singleBroadcastScan(secondsToScan):
             foundServers.append(tempArray)
         
         # Already exists, does not add
+    
+    clearConsoleScreen()
 
+# Main program loop, rerun here if program needs to 'quit'
 def programStart():
+    global globalPcObject
     # Check local config for static server addresses and this clients PSK
     readConfigFile()
     
@@ -392,9 +399,6 @@ def programStart():
     # Do a broadcast scan for 5 seconds, push into array
     singleBroadcastScan(5)
     
-    # Clear screen to show list
-    clearConsoleScreen()
-    
     # Show broadcast found servers and servers from config
     loop = asyncio.get_event_loop()
     
@@ -403,34 +407,36 @@ def programStart():
     clearConsoleScreen()
     
     serverIpAddress = loop.run_until_complete(startConnecting(selectedIndex))
-    # loop.run_forever()
     
-    rtcLoop = asyncio.new_event_loop()
+    # rtcLoop = asyncio.new_event_loop()
     
-    clientPeer = rtcLoop.run_until_complete(startRTCPeering(serverIpAddress))
+    # clientPeer = rtcLoop.run_until_complete(startRTCPeering(serverIpAddress))
+    clientPeer = loop.run_until_complete(startRTCPeering(serverIpAddress))
     # Push to another thread
-    rtcThread = threading.Thread(target=(rtcLoop.run_forever))
+    rtcThread = threading.Thread(target=(loop.run_forever))
     rtcThread.start()
+    
+    # Wait for one second for connections
+    time.sleep(1)
     
     while True:
         print("State:")
         print(clientPeer.sctp.state)
+        print(" ")
         isQ = input("Press Q to exit, other to check: ")
         
         if isQ == 'Q' or isQ == 'q':
-            # rtcLoop.run_until_complete(clientPeer.close())
-            # Kill thread somehow
-            # rtcThread.
-            
-            print("New State: " + str(clientPeer.sctp.statee))
-            
+                     
+            # Somehow call globalPcObject.close()
+            print("Closing Peer")
+            loop.stop()
+            time.sleep(0.5)
+            loop.run_until_complete(globalPcObject.close())
+            print("Closed!")
             break
-
-
-    # # Keep running forever?
-    # while True:
-    #     print("Status: " + str((clientPeer.signalingState)))
-    #     await asyncio.sleep(1)
+    
+    # Program should exit here
+    print("Exiting program")
 
     # Connecting with options, show connected interface
     # Start transmiting audio and video to server

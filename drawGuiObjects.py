@@ -2,14 +2,17 @@ import pygame, myGlobals
 from datetime import datetime
 
 def drawRoundedRectangle(widthHeightTuple, positionTuple):
-    # Draw to screen does alpha
-    rectangleObject = pygame.image.load("textBackground.png").convert_alpha()
-    # Set desired size
-    rectangleObject = pygame.transform.scale(rectangleObject, widthHeightTuple)
-    # Set alpha
-    rectangleObject.set_alpha(200)
+    # Put coords and size into rectangle
+    recPosition = pygame.Rect(positionTuple, widthHeightTuple)
+    
+    # Create new surface
+    rectangleSurface = pygame.Surface((myGlobals.screenObject.get_width(), myGlobals.screenObject.get_height()),  pygame.SRCALPHA)
+    
+    # Draw rectangle onto surface
+    rectangleObject = pygame.draw.rect(rectangleSurface, (42, 42, 42, 200), recPosition, border_radius=25)
+
     # Blit onto screen
-    myGlobals.screenObject.blit(rectangleObject, positionTuple)
+    myGlobals.screenObject.blit(rectangleSurface, (0, 0))
 
 # Draw information to display at all times while not connecting
 # Name, Time, IP Address
@@ -83,29 +86,31 @@ def pyGameDrawInformation(font):
         
         # Draw background rectangles
         # Time date box
-        # Looks bad, figure out another solution
-        # posTuple = ((myGlobals.screenObject.get_width() - dateTextWhite.get_width() - 5), 0)
-        # drawRoundedRectangle(((dateTextWhite.get_width() *2 ), (dateTextWhite.get_height() * 2)), posTuple)
+        posTuple = ((myGlobals.screenObject.get_width() - dateTextWhite.get_width() - 20), (0 - dateTextWhite.get_height()) - 40)
+        drawRoundedRectangle(((dateTextWhite.get_width() *2 ), (dateTextWhite.get_height() * 4)), posTuple)
+        
+        
         # Connection info box
-        # drawRoundedRectangle((boxWidth, boxHeight), (boxX, boxY))
-
+        posTuple = ((0 - connectionTextBottomWhite.get_width()) + 20, (myGlobals.screenObject.get_height() - (connectionTextBottomWhite.get_height() * 3)) - 20)
+        drawRoundedRectangle(((connectionTextBottomWhite.get_width() *2 ), (connectionTextBottomWhite.get_height() * 4)), posTuple)
+        
         
         # Blit both it to screen
         # Draw date text with outline, 1st top right
-        myGlobals.screenObject.blit(dateTextBlack, dateTextPositionBlack)
+        # myGlobals.screenObject.blit(dateTextBlack, dateTextPositionBlack)
         myGlobals.screenObject.blit(dateTextWhite, dateTextPositionWhite)
         
         # Draw time text with outline, 2nd top right
-        myGlobals.screenObject.blit(timeTextBlack, timeTextPositionBlack)
+        # myGlobals.screenObject.blit(timeTextBlack, timeTextPositionBlack)
         myGlobals.screenObject.blit(timeTextWhite, timeTextPositionWhite)
         # Draw server name with outline, bottom left
-        myGlobals.screenObject.blit(serverNameTextBlack, serverNamePositionBlack)
+        # myGlobals.screenObject.blit(serverNameTextBlack, serverNamePositionBlack)
         myGlobals.screenObject.blit(serverNameTextWhite, serverNamePositionWhite)
         # Draw connection text, bottom left
-        myGlobals.screenObject.blit(connectionTextTopBlack, connectionTextPositionBlackTop)
+        # myGlobals.screenObject.blit(connectionTextTopBlack, connectionTextPositionBlackTop)
         myGlobals.screenObject.blit(connectionTextTopWhite, connectionTextPositionWhiteTop)
         # Draw connectionBottom text, bottom left
-        myGlobals.screenObject.blit(connectionTextBottomBlack, connectionTextPositionBlackBottom)
+        # myGlobals.screenObject.blit(connectionTextBottomBlack, connectionTextPositionBlackBottom)
         myGlobals.screenObject.blit(connectionTextBottomWhite, connectionTextPositionWhiteBottom)
         
 # Draw current connecting client and PIN if found, 
@@ -128,7 +133,7 @@ def drawConnectingInformation():
     # Start drawing text
     connectionText = font.render(connectingString, True, (255, 255, 255))
     # Blit
-    myGlobals.screenObject.blit(connectionText, (boxX, boxY))
+    myGlobals.screenObject.blit(connectionText, (boxX + 10, boxY + 5))
     
     pinString = 'READY'
     
