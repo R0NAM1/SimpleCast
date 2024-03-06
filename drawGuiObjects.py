@@ -87,15 +87,60 @@ def pyGameDrawInformation(font):
         # Draw connectionBottom text, bottom left
         myGlobals.screenObject.blit(connectionTextBottomWhite, connectionTextPositionWhiteBottom)
         
+# Draw pauseSurface, half opacity black surface, then time and date
+def drawPausedScreen(displayInfo):
+    
+    # blit surface at top left
+    myGlobals.screenObject.blit(myGlobals.pauseSurface, (0, 0))
+    
+    # Draw half opacity screen
+    blackCurtain = pygame.Surface((displayInfo.current_w, displayInfo.current_h))
+    blackCurtain.fill((0, 0, 0))
+    blackCurtain.set_alpha(200)
+    
+    # Draw time and date
+    currentTime = datetime.now()
+    # Convert to 12 hour format
+    dateString = currentTime.strftime("%A, %B %d, %Y")
+    twelveHourString = currentTime.strftime("%I:%M:%S %p")
+    
+    # Create font objects
+    dateStringFont = pygame.font.Font(None, 30)
+    twelveHourStringFont = pygame.font.Font(None, 60)
+    
+    # Render to surfaces
+    dateStringSurface = dateStringFont.render(dateString, True, (255, 255, 255))
+    twelveHourStringSurface = twelveHourStringFont.render(twelveHourString, True, (255, 255, 255))
+    
+    # Calculate positions
+    
+    dateStringPositon = ((displayInfo.current_w / 2) - (dateStringSurface.get_width() / 2), (displayInfo.current_h / 2) - 20)
+    twelveHourStringPositon = ((displayInfo.current_w / 2) - (twelveHourStringSurface.get_width() / 2), (displayInfo.current_h / 2) + 20)
+    
+    # Draw surfaces
+    myGlobals.screenObject.blit(blackCurtain, (0, 0))
+    myGlobals.screenObject.blit(dateStringSurface, dateStringPositon)
+    myGlobals.screenObject.blit(twelveHourStringSurface, twelveHourStringPositon)
+
+        
 # Draw current connecting client and PIN if found, 
 def drawConnectingInformation():    
     # New font object
-    font = pygame.font.Font(None, 40)
+    font = pygame.font.Font(None, 25)
+    timerFont = pygame.font.Font(None, 40)
     fontPin = pygame.font.Font(None, 210)
     
     connectingString = (myGlobals.clientHostname + " is attemping to connect...")
     calculateConnectionDiff = (time.time() - myGlobals.connectionTimer)
     # myGlobals.connectionTimer
+    
+    # Connection timer logic
+    # We find the difference between connectionTimer and current time, if above 20 then close connection
+    # To calculate countdown, take countdown time (20) and take away diff time and draw int
+
+    myGlobals.nearestConnectionInt = int(20 - calculateConnectionDiff)
+    timerToDraw = str(myGlobals.nearestConnectionInt)
+
     
     boxHeight = 300
     boxWidth = 700
@@ -110,10 +155,14 @@ def drawConnectingInformation():
     connectionText = font.render(connectingString, True, (255, 255, 255))
     
     # Draw connectionTime
+    timerToDrawText = timerFont.render(timerToDraw, True, (255, 255, 255))
     
     # Blit
     myGlobals.screenObject.blit(connectionText, (boxX + 10, boxY + 5))
     
+    # Blit timer
+    myGlobals.screenObject.blit(timerToDrawText, ((boxX + boxWidth) - (timerToDrawText.get_width() + 10), boxY + 5))
+
     pinString = 'READY'
     
     if myGlobals.generatedPin != 'False':

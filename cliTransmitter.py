@@ -21,6 +21,20 @@ willSendAudio = False
 foundServers = []
 globalPcObject = None
 
+async def doHTTPPost(commandToSend, serverIpAddress):
+ # Open HTTP session with server
+            session = aiohttp.ClientSession()
+            
+            serverUrl = 'http://' + serverIpAddress + ':4825/command'
+            commandString = (commandToSend)
+            # SEND POST, wait for response
+            serverDataRecieved = await (session.post(serverUrl, data=commandString)) 
+
+            serverTextReceived = await (serverDataRecieved.text())
+            
+            print("Response: " + str(serverTextReceived))
+            
+            
 async def startRTCPeering(serverIpAddress):
     global globalPcObject
     print("Should have authed, now attempting RTC")
@@ -28,7 +42,7 @@ async def startRTCPeering(serverIpAddress):
     serverPostAddress = 'http://' + serverIpAddress + ':4825/sdpOffer'
     
     # Define config
-    stunServer = "stun:10.42.0.8"
+    stunServer = ("stun:" + serverIpAddress)
     
     # Create peer connection
     clientPeer = RTCPeerConnection(configuration=RTCConfiguration(
@@ -47,7 +61,8 @@ async def startRTCPeering(serverIpAddress):
     audioPLayerTrack = mediaPlayer.audio
     # clientPeer.addTrack(videoPLayerTrack)
     clientPeer.addTransceiver(videoPLayerTrack, direction='sendonly')
-    clientPeer.addTransceiver(audioPLayerTrack, direction='sendonly')
+    if willSendAudio == True:
+        clientPeer.addTransceiver(audioPLayerTrack, direction='sendonly')
     
     # Add data channel
     # DOES NOT WORK WITHOUT DATACHANNEL, I again, don't know why :/
@@ -228,7 +243,7 @@ async def probeServerForStatus(serverIpAddress):
 
 # Probe server, is PIN required, forward PSK, if so. Is Audio enabled?
 async def startConnecting(serverIndex):
-    global clientPsk, serverPinAuthNeeded, serverAudioAllowed, serverIpAddress
+    global clientPsk, serverPinAuthNeeded, serverAudioAllowed, serverIpAddress, willSendAudio
     serverIndex = int(serverIndex)
     
     # Combine foundServers and configServers to get one list with applicable indexes
@@ -282,6 +297,9 @@ async def startConnecting(serverIndex):
         
         print("Options options, ")
         print("C) Connect to server")
+        if serverAudioAllowed:
+            print("A) Toggle Audio Redirection") #TODO
+            # willSendAudio
         
         amIAuth = ''
         
@@ -303,6 +321,18 @@ async def startConnecting(serverIndex):
                     # Send probe command
                     amIAuth = await session.post(serverUrl, data=probeString) 
                     break
+            
+            elif userInput == 'a' or userInput == 'A':
+                if serverAudioAllowed:
+                    # Can toggle
+                    if willSendAudio == False:
+                        willSendAudio = True
+                    else:
+                        willSendAudio = False
+                    print("Toggled Audio Redirection to " + str(willSendAudio))
+                else:
+                    print("Server Audio Redirection not allowed")
+
             else:
                 print("Unreconized option, try again...")
                 
@@ -422,8 +452,10 @@ def programStart():
     while True:
         print("State:")
         print(clientPeer.sctp.state)
-        print(" ")
-        isQ = input("Press Q to exit, other to check: ")
+        print("=====================Connected")
+        print("P) Pause Casting")
+        print("Q) Quit Program")
+        isQ = input("Command: ")
         
         if isQ == 'Q' or isQ == 'q':
                      
@@ -434,6 +466,10 @@ def programStart():
             loop.run_until_complete(globalPcObject.close())
             print("Closed!")
             break
+        
+        elif isQ == 'p' or isQ == 'P':
+            asyncio.run(doHTTPPost("command:pause|", serverIpAddress))
+           
     
     # Program should exit here
     print("Exiting program")

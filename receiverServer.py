@@ -9,7 +9,7 @@ from datetime import datetime
 
 # SimpleCast specific imports
 from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, drawNextSlideShowFrameTick, aspectRatioResizeFixedHeight
-from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation
+from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
 import myGlobals
 
 global clientIP, latestVideoFrame, processFrames, pingPongTime, thisServersIpAddress, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, currentConnection
@@ -64,8 +64,9 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         globalPcObject = serverPeer
         
         serverPeer.addTransceiver('video', direction='recvonly')
-        # If we can and are allowed to redirect audio, create pyaudio stream to write frames to
-        if allowAudioRedirection == True:
+        # If we can and are allowed to redirect audio
+        # Check if client is sending audio by checking SDP for m=audio
+        if (allowAudioRedirection == True) and ("m=audio" in sdpObjectText):
             # Add transceiver
             serverPeer.addTransceiver('audio', direction='recvonly')
             # Initialize pyaudio stream
@@ -137,8 +138,9 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             # Write to pyAudioBufferQueue
                             audioBuffer = numpy.frombuffer(latestAudioFrame.to_ndarray(), dtype=numpy.int16)
                                     
-                            # Write to stream device
-                            myGlobals.pyAudioStream.write(audioBuffer.tobytes())
+                            # Write to stream device if unpaused
+                            if myGlobals.isPaused == False:
+                                myGlobals.pyAudioStream.write(audioBuffer.tobytes())
                             
                         except Exception as e:
                             print("AudioMediaPlayer Failed, pass, " + str(e))
@@ -186,7 +188,7 @@ def readConfigurationFile():
             # Check audio redirection
             allowAudioRedirection = jsonObject['allowAudioRedirection']
             print("Audio Redirection: " + str(allowAudioRedirection))
-            allowAudioRedirection = True
+
             # Grab PSK List
             allowedPskList = jsonObject['allowedPskList']
             print("Allowed PSK List: " + str(allowedPskList))
@@ -260,6 +262,25 @@ async def processHTTPCommand(commandRequest):
         # Return string to client, break connection and reset
         return web.Response(content_type="text/html", text=returnString)
 
+    # Is client asking to pause?
+    elif (splitData[0] == 'command:pause'):
+        # Verify status is connected and clientIP Matches
+        if (thisClientIP == clientIP) and (currentConnection == 'connected'):
+            
+            if myGlobals.isPaused == False:
+            # Toggle isPaused
+                myGlobals.isPaused = True
+                return web.Response(content_type="text/html", status=418, text="response:paused")
+
+            elif myGlobals.isPaused == True:
+            # Toggle isPaused
+                myGlobals.isPaused = False
+                return web.Response(content_type="text/html", status=418, text="response:unpaused")
+
+        else:
+            return web.Response(content_type="text/html", status=418, text="response:notAuthorized")
+
+    
     # Process command, is it command:attemptConnection?
     elif (splitData[0] == 'command:attemptConnection'):
         
@@ -386,8 +407,6 @@ def pyGameConstantUpdating():
         elif currentConnection == 'connecting':
             # A client is connecting, same as open plus draw box in middle that shows PIN if required, if all 0's, just show host connecting
             
-            # Calculate time difference
-            # myGlobals.nearestConnectionInt
             
             # Draw slideShowBackground
             drawNextSlideShowFrameTick()
@@ -398,30 +417,42 @@ def pyGameConstantUpdating():
             # Draw PIN box with current host connecting
             drawConnectingInformation()
             
+            # Check if nearestConnectionInt is at or below 0, if so then set connection back to open
+            if (myGlobals.nearestConnectionInt <= 0):
+                    setInitalValues()
+                    
             ## END OF CONNECTING
             
         elif currentConnection == 'connected':
             # Have connection, take latestVideoFrame and convert to surface object to draw on screen
             # Wrap in try, in case of exception since latestVideoFrame is none by default
-            try:
-                # Transform VideoFrame object to RGB image in a bytearray                
-                frameArray = latestVideoFrame.to_rgb().to_ndarray()
-                # Make into a PyGame Surface
-                frameSurface = pygame.surfarray.make_surface(frameArray)
-                # Rotate 90 degrees to fix
-                frameSurface = pygame.transform.rotate(frameSurface, 90)
-                # Flip upsidedown to flip image
-                frameSurface = pygame.transform.flip(frameSurface, False, True)
-                # Resize surface to fit display by fixed height
-                frameSurface = aspectRatioResizeFixedHeight(frameSurface)
-                
-                # Draw frameSurface to PyGame
-                myGlobals.screenObject.blit(frameSurface, (0, 0))
-                
-            except Exception as e:
-                # Called if latestVideoFrame is None usually, is ok to pass
-                # print("Exception: " + str(e))
-                pass
+            
+            # Check if paused
+            if myGlobals.isPaused:
+                drawPausedScreen(displayInfo)
+            else:
+                try:
+                    # Transform VideoFrame object to RGB image in a bytearray                
+                    frameArray = latestVideoFrame.to_rgb().to_ndarray()
+                    # Make into a PyGame Surface
+                    frameSurface = pygame.surfarray.make_surface(frameArray)
+                    # Rotate 90 degrees to fix
+                    frameSurface = pygame.transform.rotate(frameSurface, 90)
+                    # Flip upsidedown to flip image
+                    frameSurface = pygame.transform.flip(frameSurface, False, True)
+                    # Resize surface to fit display by fixed height
+                    frameSurface = aspectRatioResizeFixedHeight(frameSurface)
+                    
+                    # Set paused surface
+                    myGlobals.pauseSurface = frameSurface
+                    
+                    # Draw frameSurface to PyGame
+                    myGlobals.screenObject.blit(frameSurface, (0, 0))
+                    
+                except Exception as e:
+                    # Called if latestVideoFrame is None usually, is ok to pass
+                    # print("Exception: " + str(e))
+                    pass
 
         # End of connection specific logic, all things drawn, now update display
         pygame.display.flip() 

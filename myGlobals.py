@@ -15,12 +15,12 @@ oldBackground = ''
 
 # Other
 connectionTimer = 0
-nearestConnectionInt = 0
+nearestConnectionInt = 20
 serverName = 'noNameFoundSomethingIsWrong'
 clientHostname = ''
 generatedPin = 'False'
 pyAudioDevice = None
 pyAudioStream = None
 pyAudioBufferQueue = None
-pyAudioRunThread = False
-
+isPaused = False
+pauseSurface = None
