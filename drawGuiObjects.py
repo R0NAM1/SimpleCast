@@ -27,7 +27,12 @@ def pyGameDrawInformation(font):
         # Convert to 12 hour format
         dateString = currentTime.strftime("%A, %B %d, %Y")
         twelveHourString = currentTime.strftime("%I:%M:%S %p")
-        # Render text
+        
+        # Render date 
+        dateTextWhite = font.render(dateString, True, (255, 255, 255))
+        dateTextWhite.set_alpha(240)
+        
+        # Render surface
         timeTextWhite = font.render(twelveHourString, True, (255, 255, 255))
         timeTextWhite.set_alpha(240)
         
@@ -40,20 +45,25 @@ def pyGameDrawInformation(font):
         connectionTextBottomWhite.set_alpha(240)
         
         # Render name text
-        serverNameTextWhite = font.render(myGlobals.serverName, True, (255, 255, 255))
+        serverNameTextWhite = font.render(myGlobals.serverName + " [" + myGlobals.thisServersIpAddress + "]" , True, (255, 255, 255))
         serverNameTextWhite.set_alpha(240)
         
-        # Render date 
-        dateTextWhite = font.render(dateString, True, (255, 255, 255))
-        dateTextWhite.set_alpha(240)
+        # Calculate positions, top left is 0, 0 as origin
         
-        # Calculate positions, top left is 0, 0 as origin. Use inset of 5 pixels so that way it's not on the edge
-        # Top right, for time
-        # Offset by dateTextWhite.get_height + 5
-        timeTextPositionWhite = ((myGlobals.screenObject.get_width() - timeTextWhite.get_width()) - 5, (3 + 10) + dateTextWhite.get_height())
+        # Top right, date (top right, anchor to right offset by 8, height is 8 down)
+        dateTextPositionWhite = ((myGlobals.screenObject.get_width() - dateTextWhite.get_width()) - 8, (8))
         
-        # Top right, date
-        dateTextPositionWhite = ((myGlobals.screenObject.get_width() - dateTextWhite.get_width()) - 5, (3 + 5))
+        # Top right, date (top right, anchor to right offset by 8, height is height of datetime + 8 down)
+        timeTextPositionWhite = ((myGlobals.screenObject.get_width() - timeTextWhite.get_width()) - 8, dateTextWhite.get_height() + 8)
+        
+        # DRAW Time date box
+        # position is top right offset by dateTextPosition width with 10 offset, height is date + time strings offset 20
+        posTuple = (((myGlobals.screenObject.get_width() - dateTextWhite.get_width()) - 20), 
+                    (0 - (dateTextWhite.get_height() + timeTextWhite.get_height())) + 20)
+
+        drawRoundedRectangle((((dateTextWhite.get_width()) * 2 ), ((dateTextWhite.get_height() + timeTextWhite.get_height()) * 2)), posTuple)
+        
+        
         
         # Bottom left, for name
         serverNamePositionWhite = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height()) - (3 + 5)))
@@ -64,15 +74,22 @@ def pyGameDrawInformation(font):
         # Position for connection text top
         connectionTextPositionWhiteBottom = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height())) - (3 + 10)))
         
-        # Draw background rectangles
-        # Time date box
-        posTuple = ((myGlobals.screenObject.get_width() - dateTextWhite.get_width() - 20), (0 - dateTextWhite.get_height()) - 40)
-        drawRoundedRectangle(((dateTextWhite.get_width() * 2 ), (dateTextWhite.get_height() * 5)), posTuple)
+        widthToUse = 0
         
+        # Calc widest surface
+        if (serverNameTextWhite.get_width() > connectionTextBottomWhite.get_width()):
+            # Server name is bigger, use
+            widthToUse = serverNameTextWhite.get_width()
+        else:
+            # connectionTextBottomWhite is bigger
+            widthToUse = connectionTextBottomWhite.get_width()
+
+        combinedHeight = connectionTextBottomWhite.get_height() + connectionTextTopWhite.get_height() + serverNameTextWhite.get_height()
         
         # Connection info box
-        posTuple = ((0 - connectionTextBottomWhite.get_width()) + 20, (myGlobals.screenObject.get_height() - (connectionTextBottomWhite.get_height() * 3)) - 20)
-        drawRoundedRectangle(((connectionTextBottomWhite.get_width() *2 ), (connectionTextBottomWhite.get_height() * 4)), posTuple)
+        posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight)) - 25)
+        
+        drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
         
         
         # Blit both it to screen

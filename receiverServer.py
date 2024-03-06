@@ -12,7 +12,7 @@ from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, dra
 from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
 import myGlobals
 
-global clientIP, latestVideoFrame, processFrames, pingPongTime, thisServersIpAddress, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, currentConnection
+global clientIP, latestVideoFrame, processFrames, pingPongTime, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, currentConnection
 # Global variables initialization
 
 # Client info variables
@@ -27,9 +27,6 @@ allowedPskList = []
 # Server variables
 sendBroadcastPacket = True
 # Needed so that we can set STUN correctly
-# Should be set to STATIC, or use a DHCP reservation.
-# Having this instead of grabbing from an interface forces you to keep it static in some way
-thisServersIpAddress = '10.42.255.249'
 # Latest videoFrame object from AioRTC
 latestVideoFrame = None
 
@@ -43,7 +40,7 @@ processFrames = False
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
 async def startReceivingScreenDataOverRTP(sdpObject):
-    global thisServersIpAddress, latestVideoFrame, globalPcObject, pingPongTime
+    global latestVideoFrame, globalPcObject, pingPongTime
     
     sdpObjectText = await sdpObject.text()
     sdpObjectOriginIP = sdpObject.remote
@@ -56,7 +53,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         
         print("=== Client ALLOWED, start RTC ===")
         # Create local peer object, set remote peer to clientSdpOfferSessionDescription
-        stunServer = ("stun:" + thisServersIpAddress)
+        stunServer = ("stun:" + myGlobals.thisServersIpAddress)
         serverPeer = RTCPeerConnection(configuration=RTCConfiguration(
             iceServers=[RTCIceServer(
                 urls=[stunServer])]))
@@ -204,6 +201,14 @@ def readConfigurationFile():
                 else:
                     print("File does not exist, " + str(slideBack))
                     
+            # Read server IP from config
+            myGlobals.thisServersIpAddress = jsonObject['serverIP']
+            
+            # Should shuffle slideshow?
+            myGlobals.shuffleWallpapers = jsonObject['shuffleSlideshow']
+            
+            # Set GUI scale, three options, low, medium, high
+            myGlobals.guiScale = jsonObject['connectionScreenScale']
 
     except Exception as e:
         print("Exception Reading From Config File, Follows: " + str(e))
@@ -498,7 +503,9 @@ def setInitalValues():
     
 # Initialize pyAudio
 def pyAudioInit():
-    myGlobals.pyAudioDevice = pyaudio.PyAudio()
+    global allowAudioRedirection
+    if allowAudioRedirection == True:
+        myGlobals.pyAudioDevice = pyaudio.PyAudio()
     
         
 # Program start

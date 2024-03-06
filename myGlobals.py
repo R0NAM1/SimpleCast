@@ -12,6 +12,8 @@ slideshowIndexTracker = 0
 backgroundToDraw = ''
 fading = False
 oldBackground = ''
+shuffleWallpapers = False
+guiScale = "medium"
 
 # Other
 connectionTimer = 0
@@ -24,3 +26,6 @@ pyAudioStream = None
 pyAudioBufferQueue = None
 isPaused = False
 pauseSurface = None
+
+# Having this instead of grabbing from an interface forces you to keep it static in some way
+thisServersIpAddress = ""

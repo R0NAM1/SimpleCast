@@ -1,4 +1,4 @@
-import time, pygame
+import time, pygame, random
 
 # Import globals
 import myGlobals
@@ -100,9 +100,18 @@ def drawNextSlideShowFrameTick():
         myGlobals.slideShowTimer = time.time()
         
         # Increase myGlobals.slideshowIndexTracker, or rollover
-        myGlobals.slideshowIndexTracker += 1
-        if myGlobals.slideshowIndexTracker >= len(myGlobals.slideshowBackgrounds):
-            myGlobals.slideshowIndexTracker = 0
+        if myGlobals.shuffleWallpapers == True:
+            # Store old index
+            oldIndex = myGlobals.slideshowIndexTracker
+            # Create list excluding old index
+            newIndexList = list(range(0, oldIndex)) + list(range(oldIndex+1, len(myGlobals.slideshowBackgrounds)))
+            # Set on random
+            myGlobals.slideshowIndexTracker = random.choice(newIndexList)
+        else:
+            # Increment index
+            myGlobals.slideshowIndexTracker += 1
+            if myGlobals.slideshowIndexTracker >= len(myGlobals.slideshowBackgrounds):
+                myGlobals.slideshowIndexTracker = 0
         
         # Change background to new one, next in index
         myGlobals.backgroundToDraw = loadImageOntoSurface(myGlobals.slideshowBackgrounds[myGlobals.slideshowIndexTracker])
