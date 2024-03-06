@@ -1,4 +1,4 @@
-import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys
+import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy
 from threading import Thread, active_count
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCConfiguration, RTCIceServer, RTCDataChannel, RTCRtpCodecParameters
 from aiortc.mediastreams import VideoFrame
@@ -27,7 +27,9 @@ allowedPskList = []
 # Server variables
 sendBroadcastPacket = True
 # Needed so that we can set STUN correctly
-thisServersIpAddress = '10.42.0.8'
+# Should be set to STATIC, or use a DHCP reservation.
+# Having this instead of grabbing from an interface forces you to keep it static in some way
+thisServersIpAddress = '10.42.255.249'
 # Latest videoFrame object from AioRTC
 latestVideoFrame = None
 
@@ -37,7 +39,6 @@ globalPcObject = None
 pingPongTime = 0
 # Process Frames?
 processFrames = False
-
 
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
@@ -55,7 +56,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         
         print("=== Client ALLOWED, start RTC ===")
         # Create local peer object, set remote peer to clientSdpOfferSessionDescription
-        stunServer = "stun:10.42.0.8"
+        stunServer = ("stun:" + thisServersIpAddress)
         serverPeer = RTCPeerConnection(configuration=RTCConfiguration(
             iceServers=[RTCIceServer(
                 urls=[stunServer])]))
@@ -63,8 +64,16 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         globalPcObject = serverPeer
         
         serverPeer.addTransceiver('video', direction='recvonly')
-        serverPeer.addTransceiver('audio', direction='recvonly')
-
+        # If we can and are allowed to redirect audio, create pyaudio stream to write frames to
+        if allowAudioRedirection == True:
+            # Add transceiver
+            serverPeer.addTransceiver('audio', direction='recvonly')
+            # Initialize pyaudio stream
+            pyFormat = pyaudio.paInt16
+            pyChannels = 2
+            pyRate = 48000
+            myGlobals.pyAudioStream = myGlobals.pyAudioDevice.open(format=pyFormat, channels=pyChannels, rate=pyRate, output=True, frames_per_buffer=4800)
+            
         clientSdpOfferSessionDescription = RTCSessionDescription(sdpObjectText, 'offer')
         print("Got SDP offer from client, generating response SDP")
             
@@ -79,57 +88,71 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         print("Generated SDP response, returning")
         
         # Schedule task to run to gather frames
-        
-        async def processFrames():
+        async def processVideoFrames():
             global latestVideoFrame, globalPcObject, processFrames, allowAudioRedirection
             # Wait one second for sctp to establish
             await asyncio.sleep(1)
-            print("Start process frames")
             receivers = serverPeer.getReceivers()
-            
             lastFrame = time.time()
-        
             processFrames = True
-            while processFrames:
-                for rec in receivers:
+        
+            for rec in receivers:
                 # Wrap over video and audio receivers, grab frames from each
                     if rec.track.kind == "video":
-                    # Wrap in try statement, if Exception ignore
-                        try:
-                            # Load video, wrap aronud timeout so we don't block forever, 5 seconds
-                            latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
-                            # Below is frame delay calculations to see it, make it into a debug mode someday
-                            # calc = time.time() - lastFrame
-                            # lastFrame = time.time()
-                            # print("Got frame, time diff: " + str(calc))
-                                
-                        except Exception as e:
-                            print("MediaPlayer Failed, " + str(e))
-                            print("Closing peer")
-                            await globalPcObject.close()
-                            print("Setting initial values")
-                            processFrames = False
-                            setInitalValues()
-                     
-                    # print("Now try audio")
-                    
-                    # Check audio ONLY IF audio redirection is allowed
-                    if rec.track.kind == "audio" and allowAudioRedirection == True:
+                        while processFrames:
+                            # Wrap in try statement, if Exception ignore
+                            try:
+                                # Load video, wrap aronud timeout so we don't block forever, 5 seconds
+                                latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
+                                # Below is frame delay calculations to see it, make it into a debug mode someday
+                                # calc = time.time() - lastFrame
+                                # lastFrame = time.time()
+                                # print("Got frame, time diff: " + str(calc))
+                                    
+                            except Exception as e:
+                                print("MediaPlayer Failed, " + str(e))
+                                await globalPcObject.close()
+                                processFrames = False
+                                setInitalValues()
+                        
+        async def processAudioFrames():
+            global latestVideoFrame, globalPcObject, processFrames, allowAudioRedirection
+            # Wait one second for sctp to establish
+            await asyncio.sleep(1)
+            receivers = serverPeer.getReceivers()
+            lastFrame = time.time()
+            processFrames = True
+                        
+            for rec in receivers:
+                if rec.track.kind == "audio":
+                    while processFrames == True:
                         # Wrap in try statement, if Exception ignore
                         try:
                             # Load video, wrap aronud timeout so we don't block forever, 5 seconds
                             latestAudioFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
-                            # ON audio frame receive, play immediently,
-                            print("Got audio frame! " + str(latestAudioFrame))
-                                
+                            # calc = time.time() - lastFrame
+                            # lastFrame = time.time()
+                            # print("Got frame, time diff: " + str(calc))
+                                                        
+                            # Write to pyAudioBufferQueue
+                            audioBuffer = numpy.frombuffer(latestAudioFrame.to_ndarray(), dtype=numpy.int16)
+                                    
+                            # Write to stream device
+                            myGlobals.pyAudioStream.write(audioBuffer.tobytes())
+                            
                         except Exception as e:
                             print("AudioMediaPlayer Failed, pass, " + str(e))
-                            pass 
-            
-        asyncio.create_task(processFrames())
-                
-        # Set ping pong time initially
-        pingPongTime = time.time()
+                            processFrames = False
+                            # Close audio stream
+                            time.sleep(0.2)
+                            myGlobals.pyAudioStream.stop_stream()
+                            myGlobals.pyAudioStream.close()
+                            # myGlobals.pyAudioDevice.terminate()
+                        
+        # Create frame ingest tasks                            
+        asyncio.create_task(processVideoFrames())
+        if allowAudioRedirection:
+            asyncio.create_task(processAudioFrames())
         
         # Return SDP
         return web.Response(content_type="text/html", text=serverPeer.localDescription.sdp)
@@ -163,7 +186,7 @@ def readConfigurationFile():
             # Check audio redirection
             allowAudioRedirection = jsonObject['allowAudioRedirection']
             print("Audio Redirection: " + str(allowAudioRedirection))
-
+            allowAudioRedirection = True
             # Grab PSK List
             allowedPskList = jsonObject['allowedPskList']
             print("Allowed PSK List: " + str(allowedPskList))
@@ -239,8 +262,9 @@ async def processHTTPCommand(commandRequest):
 
     # Process command, is it command:attemptConnection?
     elif (splitData[0] == 'command:attemptConnection'):
-        # TODO, add timeout for X seconds! If no connection is made, reset to open
-            
+        
+        # Set connectionTimer to current time
+        myGlobals.connectionTimer = time.time()   
             
         # Print official connection information
         print('=========================================')
@@ -338,8 +362,8 @@ def pyGameConstantUpdating():
     blackBackground.fill((0, 0, 0))
             
     # Create time font object
-    font = pygame.font.Font(None, 80)
-    
+    font = pygame.font.Font(None, 40)
+        
     # Constant check, wrap in while True for now
     # While thread is running
     while True:
@@ -361,6 +385,9 @@ def pyGameConstantUpdating():
             
         elif currentConnection == 'connecting':
             # A client is connecting, same as open plus draw box in middle that shows PIN if required, if all 0's, just show host connecting
+            
+            # Calculate time difference
+            # myGlobals.nearestConnectionInt
             
             # Draw slideShowBackground
             drawNextSlideShowFrameTick()
@@ -385,8 +412,7 @@ def pyGameConstantUpdating():
                 frameSurface = pygame.transform.rotate(frameSurface, 90)
                 # Flip upsidedown to flip image
                 frameSurface = pygame.transform.flip(frameSurface, False, True)
-                # Resize surface to fit display
-                # frameSurface = pygame.transform.scale(frameSurface, (displayInfo.current_w, displayInfo.current_h))
+                # Resize surface to fit display by fixed height
                 frameSurface = aspectRatioResizeFixedHeight(frameSurface)
                 
                 # Draw frameSurface to PyGame
@@ -396,7 +422,6 @@ def pyGameConstantUpdating():
                 # Called if latestVideoFrame is None usually, is ok to pass
                 # print("Exception: " + str(e))
                 pass
-
 
         # End of connection specific logic, all things drawn, now update display
         pygame.display.flip() 
@@ -439,11 +464,19 @@ def setInitalValues():
     myGlobals.generatedPin = 'False'
     # Reset client hostname
     myGlobals.clientHostname = ''
+    
+# Initialize pyAudio
+def pyAudioInit():
+    myGlobals.pyAudioDevice = pyaudio.PyAudio()
+    
         
 # Program start
 if __name__ == '__main__':
     # Read configuration data into memory
     readConfigurationFile()
+    
+    # Init audio
+    pyAudioInit()
     
     # Initialize vars
     setInitalValues()

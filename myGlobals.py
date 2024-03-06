@@ -1,3 +1,4 @@
+import queue
 # Init certain globals here, then can be imported
 global screenObject, slideshowBackgrounds, serverName, slideShowTimer, slideshowIndexTracker, backgroundToDraw, oldBackground, fading, connectionTimer
 
@@ -14,7 +15,12 @@ oldBackground = ''
 
 # Other
 connectionTimer = 0
+nearestConnectionInt = 0
 serverName = 'noNameFoundSomethingIsWrong'
 clientHostname = ''
 generatedPin = 'False'
+pyAudioDevice = None
+pyAudioStream = None
+pyAudioBufferQueue = None
+pyAudioRunThread = False
 
