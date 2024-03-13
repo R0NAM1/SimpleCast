@@ -27,5 +27,10 @@ pyAudioBufferQueue = None
 isPaused = False
 pauseSurface = None
 
+
 # Having this instead of grabbing from an interface forces you to keep it static in some way
 thisServersIpAddress = ""
+
+# Resolution scale for decreasing current screen resolution by X factor
+# Original is 1, half is 2, 3/4 is 3, 4 is 6/8?
+resolutionScale = 1

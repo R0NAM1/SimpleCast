@@ -9,7 +9,7 @@ def drawRoundedRectangle(widthHeightTuple, positionTuple):
     rectangleSurface = pygame.Surface((myGlobals.screenObject.get_width(), myGlobals.screenObject.get_height()),  pygame.SRCALPHA)
     
     # Draw rectangle onto surface
-    rectangleObject = pygame.draw.rect(rectangleSurface, (42, 42, 42, 200), recPosition, border_radius=25)
+    rectangleObject = pygame.draw.rect(rectangleSurface, (42, 42, 42, 150), recPosition, border_radius=25)
 
     # Blit onto screen
     myGlobals.screenObject.blit(rectangleSurface, (0, 0))

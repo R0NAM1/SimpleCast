@@ -70,7 +70,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             pyFormat = pyaudio.paInt16
             pyChannels = 2
             pyRate = 48000
-            myGlobals.pyAudioStream = myGlobals.pyAudioDevice.open(format=pyFormat, channels=pyChannels, rate=pyRate, output=True, frames_per_buffer=4800)
+            myGlobals.pyAudioStream = myGlobals.pyAudioDevice.open(format=pyFormat, channels=pyChannels, rate=pyRate, output=True, frames_per_buffer=9600)
             
         clientSdpOfferSessionDescription = RTCSessionDescription(sdpObjectText, 'offer')
         print("Got SDP offer from client, generating response SDP")
@@ -85,9 +85,19 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         
         print("Generated SDP response, returning")
         
+        #TMP
+        def calculate_frame_size_in_bytes(frame):
+            total_size = 0
+            for plane in frame.planes:
+                # Calculate the size of the current plane in bytes
+                plane_size = plane.buffer_size
+                total_size += plane_size
+            return total_size
+        
         # Schedule task to run to gather frames
         async def processVideoFrames():
             global latestVideoFrame, globalPcObject, processFrames, allowAudioRedirection
+                    
             # Wait one second for sctp to establish
             await asyncio.sleep(1)
             receivers = serverPeer.getReceivers()
@@ -102,16 +112,21 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             try:
                                 # Load video, wrap aronud timeout so we don't block forever, 5 seconds
                                 latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
+                                
+                                # print("Got video frame: " + str(latestVideoFrame))
                                 # Below is frame delay calculations to see it, make it into a debug mode someday
-                                # calc = time.time() - lastFrame
-                                # lastFrame = time.time()
-                                # print("Got frame, time diff: " + str(calc))
-                                    
+                                calc = str(time.time() - lastFrame)
+                                lastFrame = time.time()
+                                # size = str(calculate_frame_size_in_bytes(latestVideoFrame))
+                                # print("Got video frame, time diff: " + str(calc[:8]) + ", Size: " + str(0) + ", PTS: " + str(latestVideoFrame.pts))
+                                # print("Got video frame, time diff: " + str(calc[:8]))
+                                
                             except Exception as e:
                                 print("MediaPlayer Failed, " + str(e))
                                 await globalPcObject.close()
                                 processFrames = False
                                 setInitalValues()
+                                break
                         
         async def processAudioFrames():
             global latestVideoFrame, globalPcObject, processFrames, allowAudioRedirection
@@ -128,9 +143,10 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                         try:
                             # Load video, wrap aronud timeout so we don't block forever, 5 seconds
                             latestAudioFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
-                            # calc = time.time() - lastFrame
-                            # lastFrame = time.time()
-                            # print("Got frame, time diff: " + str(calc))
+                            # print(latestAudioFrame)
+                            calc = time.time() - lastFrame
+                            lastFrame = time.time()
+                            print("Got audio frame, time diff: " + str(calc) + ", " + str(latestAudioFrame))
                                                         
                             # Write to pyAudioBufferQueue
                             audioBuffer = numpy.frombuffer(latestAudioFrame.to_ndarray(), dtype=numpy.int16)
@@ -146,13 +162,18 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             time.sleep(0.2)
                             myGlobals.pyAudioStream.stop_stream()
                             myGlobals.pyAudioStream.close()
+                            break
                             # myGlobals.pyAudioDevice.terminate()
-                        
-        # Create frame ingest tasks                            
-        asyncio.create_task(processVideoFrames())
+
+
+
         if allowAudioRedirection:
             asyncio.create_task(processAudioFrames())
-        
+            asyncio.create_task(processVideoFrames())
+        else:
+            asyncio.create_task(processVideoFrames())
+    
+    
         # Return SDP
         return web.Response(content_type="text/html", text=serverPeer.localDescription.sdp)
                 
@@ -365,6 +386,7 @@ async def processHTTPCommand(commandRequest):
                     return web.Response(content_type="text/html", text="response:accepted")
                 else:
                     print('--- PIN REJECTED')
+                    setInitalValues()
                     return web.Response(content_type="text/html", text="response:rejected")
                         
         else:
@@ -470,7 +492,7 @@ def pygameInitializeBackgroundWaiting():
     pygame.init()
     
     # Change Window name and Icon
-    programIcon = pygame.image.load('logo-pallete.png')
+    programIcon = pygame.image.load('../logo-pallete.png')
     pygame.display.set_icon(programIcon)
     
     # Set name
