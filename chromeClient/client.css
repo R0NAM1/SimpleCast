@@ -1,0 +1,26 @@
+body {
+    background-color: rgb(55, 65, 143);
+    color: whitesmoke;
+}
+
+#logo {
+    border: 5px solid black;
+}
+
+#connectText {
+    position: absolute;
+    top: 20px;
+    left: 115px;
+}
+
+#centeredElements {
+    position: absolute;
+    top: 130px;
+    left: 100px;
+}
+
+#interactableGhost {
+    opacity: 50%;
+    pointer-events: none;
+}
+
