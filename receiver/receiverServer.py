@@ -1,4 +1,4 @@
-import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy
+import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors
 from threading import Thread, active_count
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCConfiguration, RTCIceServer, RTCDataChannel, RTCRtpCodecParameters
 from aiortc.mediastreams import VideoFrame
@@ -12,7 +12,7 @@ from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, dra
 from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
 import myGlobals
 
-global clientIP, latestVideoFrame, processFrames, pingPongTime, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, currentConnection
+global clientIP, latestVideoFrame, connectedTime, gotSDPResponse, processFrames, pingPongTime, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, currentConnection
 # Global variables initialization
 
 # Client info variables
@@ -37,15 +37,18 @@ pingPongTime = 0
 # Process Frames?
 processFrames = False
 
+gotSDPResponse = False
+connectedTime = ''
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
 async def startReceivingScreenDataOverRTP(sdpObject):
-    global latestVideoFrame, globalPcObject, pingPongTime
+    global latestVideoFrame, globalPcObject, pingPongTime, gotSDPResponse
     
     sdpObjectText = await sdpObject.text()
     sdpObjectOriginIP = sdpObject.remote
     
     print("=== Got SDP Offer From " + sdpObjectOriginIP + " ===")
+    gotSDPResponse = True
     
     # Check if request ip is clientIp and currentConnection is connected
     
@@ -103,31 +106,32 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             receivers = serverPeer.getReceivers()
             lastFrame = time.time()
             processFrames = True
+            startTime = time.time()
         
             for rec in receivers:
                 # Wrap over video and audio receivers, grab frames from each
-                    if rec.track.kind == "video":
-                        while processFrames:
-                            # Wrap in try statement, if Exception ignore
-                            try:
-                                # Load video, wrap aronud timeout so we don't block forever, 5 seconds
-                                latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
-                                
-                                # print("Got video frame: " + str(latestVideoFrame))
-                                # Below is frame delay calculations to see it, make it into a debug mode someday
-                                calc = str(time.time() - lastFrame)
-                                lastFrame = time.time()
-                                # size = str(calculate_frame_size_in_bytes(latestVideoFrame))
-                                # print("Got video frame, time diff: " + str(calc[:8]) + ", Size: " + str(0) + ", PTS: " + str(latestVideoFrame.pts))
-                                # print("Got video frame, time diff: " + str(calc[:8]))
-                                
-                            except Exception as e:
-                                print("MediaPlayer Failed, " + str(e))
-                                await globalPcObject.close()
-                                processFrames = False
-                                setInitalValues()
-                                break
-                        
+                if rec.track.kind == "video":
+                    while processFrames:
+                        # Wrap in try statement, if Exception ignore
+                        try:
+                            # Load video, wrap aronud timeout so we don't block forever, 5 seconds
+                            latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
+                            
+                            # print("Got video frame: " + str(latestVideoFrame))
+                            # Below is frame delay calculations to see it, make it into a debug mode someday
+                            calc = str(time.time() - lastFrame)
+                            lastFrame = time.time()
+                            # size = str(calculate_frame_size_in_bytes(latestVideoFrame))
+                            # print("Got video frame, time diff: " + str(calc[:8]) + ", Size: " + str(0) + ", PTS: " + str(latestVideoFrame.pts))
+                            # print("Got video frame, time diff: " + str(calc[:8]))
+                            
+                        except Exception as e:
+                            print("MediaPlayer Failed, " + str(e))
+                            await globalPcObject.close()
+                            processFrames = False
+                            setInitalValues()
+                            break
+        
         async def processAudioFrames():
             global latestVideoFrame, globalPcObject, processFrames, allowAudioRedirection
             # Wait one second for sctp to establish
@@ -146,7 +150,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             # print(latestAudioFrame)
                             calc = time.time() - lastFrame
                             lastFrame = time.time()
-                            print("Got audio frame, time diff: " + str(calc) + ", " + str(latestAudioFrame))
+                            # print("Got audio frame, time diff: " + str(calc) + ", " + str(latestAudioFrame))
                                                         
                             # Write to pyAudioBufferQueue
                             audioBuffer = numpy.frombuffer(latestAudioFrame.to_ndarray(), dtype=numpy.int16)
@@ -162,6 +166,9 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             time.sleep(0.2)
                             myGlobals.pyAudioStream.stop_stream()
                             myGlobals.pyAudioStream.close()
+                            # If audioPlayer fails close stream
+                            await globalPcObject.close()
+                            # setInitalValues()
                             break
                             # myGlobals.pyAudioDevice.terminate()
 
@@ -266,7 +273,7 @@ def sendBroadcastPacketWhileTrue():
 # If we use PIN Authentication, check if PSK is allowed, if not generate PIN
 # Wait for client to send connect command, with or without pin
 async def processHTTPCommand(commandRequest):
-    global usePINAuthentication, allowedPskList, clientIP, currentConnection
+    global usePINAuthentication, allowedPskList, clientIP, currentConnection, connectedTime, gotSDPResponse
                 
     # Main loop, wait for connection on port, check if currentConnection is 'open'
     # If so continue, if not drop connection with 'error:connected'      
@@ -308,7 +315,7 @@ async def processHTTPCommand(commandRequest):
 
     
     # Process command, is it command:attemptConnection?
-    elif (splitData[0] == 'command:attemptConnection'):
+    elif (splitData[0] == 'command:attemptConnection') and currentConnection == 'open':
         
         # Set connectionTimer to current time
         myGlobals.connectionTimer = time.time()   
@@ -363,7 +370,7 @@ async def processHTTPCommand(commandRequest):
                             
     # Expected next response, if no PIN was generated, then we don't need to check it, client can connect immediently              
                             
-    elif splitData[0] == "command:connect":
+    elif (splitData[0] == "command:connect") and (currentConnection == 'connecting'):
         # Check if IP matches and currentConnection = 'connecting'
         if clientIP == thisClientIP and currentConnection == 'connecting':
             # Client is authorized
@@ -383,6 +390,7 @@ async def processHTTPCommand(commandRequest):
                     # PIN Correct
                     print('--- PIN Accepted, connecting...')
                     currentConnection = 'connected'
+                    connectedTime = time.time()
                     return web.Response(content_type="text/html", text="response:accepted")
                 else:
                     print('--- PIN REJECTED')
@@ -400,7 +408,7 @@ async def processHTTPCommand(commandRequest):
 # connecting means show psk if one is generated and who is trying to connect
 # connected means show frameBuffer
 def pyGameConstantUpdating():
-    global currentConnection, latestVideoFrame, globalPcObject, pingPongTime
+    global currentConnection, latestVideoFrame, globalPcObject, pingPongTime, connectedTime, gotSDPResponse
     
     # Load display info
     displayInfo = pygame.display.Info()
@@ -480,6 +488,11 @@ def pyGameConstantUpdating():
                     # Called if latestVideoFrame is None usually, is ok to pass
                     # print("Exception: " + str(e))
                     pass
+                
+            # If connected for more then 20 seconds and gotSDPResponse is false, set back to open
+            if (time.time() - connectedTime > 20) and (gotSDPResponse == False):
+                print("SDP Response is False after 20 seconds, reset!")
+                setInitalValues()
 
         # End of connection specific logic, all things drawn, now update display
         pygame.display.flip() 
@@ -513,7 +526,7 @@ def pygameInitializeBackgroundWaiting():
         
 # Set initial connection values, 
 def setInitalValues():
-    global currentConnection, clientIP
+    global currentConnection, clientIP, latestVideoFrame, gotSDPResponse
     # Reset connection to open
     currentConnection = 'open'
     # Reset client IP to empty
@@ -522,6 +535,10 @@ def setInitalValues():
     myGlobals.generatedPin = 'False'
     # Reset client hostname
     myGlobals.clientHostname = ''
+    # Reset latestVideoFrame so last frame isn't carried over
+    latestVideoFrame = None
+    # Change gotSDPResponse
+    gotSDPResponse = False
     
 # Initialize pyAudio
 def pyAudioInit():
@@ -550,10 +567,26 @@ if __name__ == '__main__':
     
     # Init AioHTTP Webapp
     app = web.Application()
+    
+    # Init cors setup  
+    cors = aiohttp_cors.setup(app, defaults={
+    "*": aiohttp_cors.ResourceOptions(
+        allow_credentials=True,
+        expose_headers="*",
+        allow_headers="*",
+        max_age=3600,
+    )
+    })
+    
     # Add route for client communication
-    app.router.add_post("/command", processHTTPCommand)
+    commandResource = cors.add(app.router.add_resource("/command"))
+    cors.add(commandResource.add_route("POST", processHTTPCommand))
+    # app.router.add_post("/command", processHTTPCommand)
+    
     # Add route for client trying to attempt RTC connection
-    app.router.add_post("/sdpOffer", startReceivingScreenDataOverRTP)
+    sdpOfferResource = cors.add(app.router.add_resource("/sdpOffer"))
+    cors.add(sdpOfferResource.add_route("POST", startReceivingScreenDataOverRTP))
+    # app.router.add_post("/sdpOffer", startReceivingScreenDataOverRTP)
 
     # Start AioHTTP server on port 4825, wait for connection
     print("=== Opened HTTP port on 4825 ===")

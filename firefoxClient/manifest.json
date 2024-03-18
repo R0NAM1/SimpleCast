@@ -1,0 +1,33 @@
+{
+    "manifest_version": 2,
+    "name": "SimpleCast Client",
+    "version": "1.0",
+  
+    "description": "HTTP and WebRTC compliant Firefox extension for SimpleCast servers. Can only support VP8 encoding and getDisplayMedia is low framerate, those are the cons for this client implementation.",
+  
+    "icons": {
+      "48": "logo-pallete-48.png",
+      "96": "logo-pallete-96.png"
+    },
+    "permissions": [
+      "activeTab",
+      "storage",
+      "<all_urls>",
+      "tabs",
+      "storage"
+   ],
+   "background": {
+      "persistent": true,
+      "scripts": [ "./node_modules/webextension-polyfill/dist/browser-polyfill.js",
+        "windowPopup.js"],
+      
+      "type": "module"
+   },
+   "browser_action": {
+      "default_icon": "logo-pallete-48.png",
+      "default_title": "Open SimpleCast UI"
+   },
+
+   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+}
+  

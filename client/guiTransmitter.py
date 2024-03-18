@@ -470,49 +470,89 @@ async def startConnecting(serverIndex):
 def threadedBroadcastScan():
         
     # Open UDP port to listen on
-    listenBroadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # listenBroadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
     # Bind socket to port on all interfaces
-    listenBroadcastSocket.bind(('', 1337))
+    # listenBroadcastSocket.bind(('', 1337))
     
     # Enable the broadcast option on the socket (1) 
-    listenBroadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    # listenBroadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     
-    while clientGlobals.programRunning:
+    totoArray = [
+        ["10.36.0.42", "Hallway Receiver 1"],
+        ["10.424.0.42", "Eddway Lil Friend"],
+        ["10.36.454.42", "Little Guy"],
+        ["10.36.1.42", "Hallway Receiver 2"],
+        ["10.316.0.42", "Public Meeting Room"],
+        ["11.36.2.42", "The Bone Zone"],
+        ["10.6.3.42", "Private Meeting Room"],
+        ["10.3.1.42", "Santa says hello zim"],
+        ["10.35.4.2", "Goodbye Moonmen"],
+        ["10.37.0.82", "Hello horses"],
+        ["10.36.9.92", "OneOne conducts the train"],
+        ["10.30.0.02", "Brain Hurty"],
+    ]
+    
+    totoArrayStatus = [
+        "open",
+        "connecting",
+        "connected",
+        "open",
+        "connecting",
+        "connected",
+        "open",
+        "connecting",
+        "connected",
+        "open",
+        "connecting",
+        "connected"
+    ]
+    
+    # TEMP, data for construction
+    teac = 0
+    while teac < 12:
+        clientGlobals.foundServers.append(totoArray[teac])
+        clientGlobals.foundServersStatus.append(totoArrayStatus[teac])
+        print(teac)
+        teac += 1
+    
+    print("Teac finished")
+    
+    # while clientGlobals.programRunning:
  
-        # Blocking operation, wait to receive data packet
-        # Currently code does not continue unless a single packet is received
-        data, address = listenBroadcastSocket.recvfrom(1024)
+    #     # Blocking operation, wait to receive data packet
+    #     # Currently code does not continue unless a single packet is received IMPLEMENT TIMEOUT
+    #     data, address = listenBroadcastSocket.recvfrom(1024)
         
-        # Extract IP Address
-        ipAddress = address[0]
+    #     # Extract IP Address
+    #     ipAddress = address[0]
         
-        # Split data into friendly name and current connection status
-        dataArray = (data.decode()).split("|")
+    #     # Split data into friendly name and current connection status
+    #     dataArray = (data.decode()).split("|")
         
-        # Show broadcast received
-        print("=== Broadcast From " + str(address[0]) + " / Name: " + str(dataArray[0]) + " / Status: " + str(dataArray[1]) + " ===")
+    #     # Show broadcast received
+    #     print("=== Broadcast From " + str(address[0]) + " / Name: " + str(dataArray[0]) + " / Status: " + str(dataArray[1]) + " ===")
         
-        ## ADD TEMP DATA FOR TESTING
+    #     ## ADD TEMP DATA FOR TESTING
         
-        # Make array from packet data
-        tempArray = [ipAddress, dataArray[0]]
-        #dataArray[1]
-        # Add to foundServers array if not already in there
-        if tempArray not in clientGlobals.foundServers:
-            # Not already in array, add to
-            clientGlobals.foundServers.append(tempArray)
-            # Was not in before, we should also append status
-            clientGlobals.foundServersStatus.append(dataArray[1])
-        else:
-            # Is in array, find position
-            index = clientGlobals.foundServers.index(tempArray)
-            clientGlobals.foundServersStatus[index] = dataArray[1]
+    #     # Make array from packet data
+    #     tempArray = [ipAddress, dataArray[0]]
+    #     #dataArray[1]
+    #     # Add to foundServers array if not already in there
+    #     if tempArray not in clientGlobals.foundServers:
+    #         # Not already in array, add to
+    #         clientGlobals.foundServers.append(tempArray)
+    #         # Was not in before, we should also append status
+    #         clientGlobals.foundServersStatus.append(dataArray[1])
+    #     else:
+    #         # Is in array, find position
+    #         index = clientGlobals.foundServers.index(tempArray)
+    #         clientGlobals.foundServersStatus[index] = dataArray[1]
                
         
-        # Already exists, does not add
+    #     # Already exists, does not add
     
-    listenBroadcastSocket.close()
+    # listenBroadcastSocket.close()
 
 # Main program loop, rerun here if program needs to 'quit'
 def programStart():

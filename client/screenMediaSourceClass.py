@@ -5,7 +5,6 @@ from aiortc.contrib.media import REAL_TIME_FORMATS
 from av import VideoFrame, AudioFrame
 from threading import Thread, Event
 from screeninfo import get_monitors
-import myGlobals
 
 # Set AV logging, useful for if a stream is erroring for some reason, usually redundant
 global resolutionScaler
