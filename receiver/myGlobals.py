@@ -18,6 +18,7 @@ guiScale = "medium"
 # Other
 connectionTimer = 0
 nearestConnectionInt = 20
+connectionTimeOut = 20
 serverName = 'noNameFoundSomethingIsWrong'
 clientHostname = ''
 generatedPin = 'False'

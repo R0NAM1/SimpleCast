@@ -237,6 +237,9 @@ def readConfigurationFile():
             
             # Set GUI scale, three options, low, medium, high
             myGlobals.guiScale = jsonObject['connectionScreenScale']
+            
+            # Load countDownTime, default 20
+            myGlobals.connectionTimeOut = jsonObject['countDownTime']
 
     except Exception as e:
         print("Exception Reading From Config File, Follows: " + str(e))
@@ -489,8 +492,8 @@ def pyGameConstantUpdating():
                     # print("Exception: " + str(e))
                     pass
                 
-            # If connected for more then 20 seconds and gotSDPResponse is false, set back to open
-            if (time.time() - connectedTime > 20) and (gotSDPResponse == False):
+            # If connected for more then connectionTimeOut seconds and gotSDPResponse is false, set back to open
+            if (time.time() - connectedTime > myGlobals.connectionTimeOut) and (gotSDPResponse == False):
                 print("SDP Response is False after 20 seconds, reset!")
                 setInitalValues()
 

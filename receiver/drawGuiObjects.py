@@ -152,10 +152,10 @@ def drawConnectingInformation():
     # myGlobals.connectionTimer
     
     # Connection timer logic
-    # We find the difference between connectionTimer and current time, if above 20 then close connection
-    # To calculate countdown, take countdown time (20) and take away diff time and draw int
+    # We find the difference between connectionTimer and current time, if above connectionTimeOut then close connection
+    # To calculate countdown, take countdown time (connectionTimeOut) and take away diff time and draw int
 
-    myGlobals.nearestConnectionInt = int(20 - calculateConnectionDiff)
+    myGlobals.nearestConnectionInt = int(myGlobals.connectionTimeOut - calculateConnectionDiff)
     timerToDraw = str(myGlobals.nearestConnectionInt)
 
     
