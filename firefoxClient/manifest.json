@@ -3,7 +3,7 @@
     "name": "SimpleCast Client",
     "version": "1.0",
   
-    "description": "HTTP and WebRTC compliant Firefox extension for SimpleCast servers. Uses getDisplayMedia to capture screen or windows, very iffy on audio though. Currently BETA",
+    "description": "HTTP and WebRTC compliant Firefox extension for SimpleCast servers. Uses getDisplayMedia to capture screen or windows, very iffy on audio though. Currently BETA. https://github.com/R0NAM1/SimpleCast",
   
     "icons": {
       "48": "logo-pallete-48.png",
@@ -32,6 +32,13 @@
 
    "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
-   }
+   },
+
+   "browser_specific_settings": {
+    "gecko": {
+      "id": "simpleCast@example.com"
+    }
+  }
+  
 }
   
