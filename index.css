@@ -1,0 +1,84 @@
+body {
+    background-color: #242526;
+    color: whitesmoke;
+    text-align: center;
+}
+
+body a {
+    color: aliceblue;
+    text-decoration: none;
+    transition: all 50ms;
+}
+
+body a:hover {
+    color: lightblue;
+    text-decoration: underline;
+}
+
+#simpleCastInfo {
+    margin-top: 8vw;
+}
+
+#simpleCastIcon {
+    width: 175px;
+    border: black solid 5px;
+    margin-bottom: 15px;
+}
+
+#simpleCastText {
+    font-size: 25px;
+}
+
+#logoBannerImageSrc {
+    width: 75px;
+}
+
+#simpleCastDownloadsList {
+    margin-top: 30px;
+    margin-left: auto;
+    margin-right: auto;
+    border-collapse: collapse;
+}
+
+
+#downloadListItem {
+    border: whitesmoke solid 3px;
+    filter: grayscale(100%);
+    transition: all 500ms;
+}
+
+#downloadListItem:hover {
+    filter: grayscale(0%);
+}
+
+#logoBannerImageSrc {
+    margin: 15px;
+}
+
+#itemText {
+    padding: 15px;
+}
+
+#bottomBar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 45px;
+    width: 100vw;
+    background-color: #303233;
+    border-top: whitesmoke solid 5px;
+}
+
+#barItemGithub {
+    position: absolute;
+    margin-top: 10px;
+    left: 0;
+    margin-left: 30px;
+}
+
+#barItemronami {
+    position: absolute;
+    margin-top: 10px;
+    right: 0;
+    margin-right: 30px;
+}
