@@ -20,6 +20,41 @@ def sigint_handler(signum ,frame):
     myGlobals.sigIntReceived = True
     sys.exit(0)
 
+# If valid PSK, attempt to stop current globalPcObject and call setInitialValues
+async def kickCurrentConnection(commandRequest):
+    # Expects commandRequest text of 'command:kick|PSK'
+    textData = await commandRequest.text()
+    thisClientIP = commandRequest.remote
+    
+    print("=== Got command: " + str(textData) + " from client " + str(thisClientIP) + " ===")
+           
+    # Split data recieved
+    splitData = textData.split("|")
+    if splitData[0] == 'command:kick':
+        # Check if PSK exists, if not send 401
+        if splitData[1] in myGlobals.allowedPskList:
+            
+            if myGlobals.currentConnection == 'open':
+                return web.Response(content_type="text/html", status=401, text="response:notConnected")
+            else:
+                
+                print("=== Valid PKS, kicking current connection ===")
+                
+                try:
+                    await myGlobals.globalPcObject.close()
+                except:
+                    pass
+                
+                setInitalValues()
+                return web.Response(content_type="text/html", status=200, text="response:clientKicked")
+        
+        else:
+            # PSK Does not exist, cannot kick connection
+            return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
+    else:
+        return web.Response(content_type="text/html", status=401, text="response:notValidCommand")
+
+
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
 async def startReceivingScreenDataOverRTP(sdpObject):
@@ -309,7 +344,7 @@ async def processHTTPCommand(commandRequest):
                 return web.Response(content_type="text/html", status=200, text="response:unpaused")
 
         else:
-            return web.Response(content_type="text/html", status=200, text="response:notAuthorized")
+            return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
 
     
     # Process command, is it command:attemptConnection?
@@ -505,7 +540,7 @@ def pyGameConstantUpdating():
     # Primary Loop, check if myGlobals.sigIntReceived is True
     if myGlobals.sigIntReceived == True:
         print("SigInt Quit Set, Stopping!")
-        myGlobals.globalPcObject.close()
+        
         myGlobals.pyAudioDevice.terminate()
         pygame.quit()
         sys.exit()
@@ -596,14 +631,18 @@ if __name__ == '__main__':
     )
     })
     
-    # Add route for client communication
+    # Add route for client communication, meant for main connection commands
     commandResource = cors.add(app.router.add_resource("/command"))
     cors.add(commandResource.add_route("POST", processHTTPCommand))
     
     # Add route for client trying to attempt RTC connection
     sdpOfferResource = cors.add(app.router.add_resource("/sdpOffer"))
     cors.add(sdpOfferResource.add_route("POST", startReceivingScreenDataOverRTP))
-
+    
+    # Add route for kicking current connection
+    kickResource = cors.add(app.router.add_resource("/kick"))
+    cors.add(kickResource.add_route("POST", kickCurrentConnection))
+    
     # Start AioHTTP server on port 4825, wait for connection
     print("=== Opened HTTP port on 4825 ===")
     # Empty space

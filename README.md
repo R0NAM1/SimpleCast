@@ -22,8 +22,9 @@ Features (will) include:
     https://bit.ly/simplecast-client -> https://r0nam1.github.io/SimpleCast/
 - ✓ TransItion all 'globals' to myGlobals
 - ~✓ Add sigint handling (Work's better, issues with AioHTTP and AioRTC, but on 'open' it works)
+- ✓ Allow PSK to kick connection
 
-- Allow PSK to kick connection, disable/enable casting
+- Allow PSK to disable/enable casting
 - Fix image resizing on server
 - Do info drawing scaling
 - Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.

@@ -286,6 +286,38 @@ function sendPauseCommandToServer(pauseButtonElement) {
     })
 }
 
+function sendKickCommandToServer(kickButtonElement) {
+
+    var serverIdText = document.getElementById('serverIdText').value;
+    var serverIdTextURL = 'http://' + serverIdText + ':4825/kick'
+
+    // Define connection data
+    var postString = ("command:kick|") + generatedPSK
+
+    // Send command
+    fetch(serverIdTextURL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+           'Content-Type': 'text/plain'
+        },
+        body: postString
+       }).then(function(response) {
+        return response.text();
+    }).then(function(responseData) {
+
+        console.log("Got response: " + responseData)
+        
+        // Toggle Button Text
+        // if (responseData.includes('response:clientKicked')) {
+        // }
+        // else if (responseData.includes('response:paused')) {
+        //     pauseButtonElement.innerHTML = 'Resume Casting'
+        // }
+
+    })
+}
+
 function stopCasting() {
     try {
         // Reset JS applet and stop rtc peer
@@ -446,6 +478,12 @@ function addEventListenersForAll() {
 
     stopButtonElement.addEventListener('click', function() {
         stopCasting()
+    });
+
+    var kickButtonElement = document.getElementById('kickButton');
+
+    kickButtonElement.addEventListener('click', function() {
+        sendKickCommandToServer(kickButtonElement)
     });
 
     // Resolution select listener
