@@ -157,7 +157,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
     else:
         print("=== Client DENIED, notAuthorized ===")
         # 418 Teapot, 401 not authorized
-        return web.Response(content_type="text/html", status=418, text="response:notAuthorized")
+        return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
 
 ## Redo better later
 # Read configuration file, set global variables based on that
@@ -292,15 +292,15 @@ async def processHTTPCommand(commandRequest):
             if myGlobals.isPaused == False:
             # Toggle isPaused
                 myGlobals.isPaused = True
-                return web.Response(content_type="text/html", status=418, text="response:paused")
+                return web.Response(content_type="text/html", status=200, text="response:paused")
 
             elif myGlobals.isPaused == True:
             # Toggle isPaused
                 myGlobals.isPaused = False
-                return web.Response(content_type="text/html", status=418, text="response:unpaused")
+                return web.Response(content_type="text/html", status=200, text="response:unpaused")
 
         else:
-            return web.Response(content_type="text/html", status=418, text="response:notAuthorized")
+            return web.Response(content_type="text/html", status=200, text="response:notAuthorized")
 
     
     # Process command, is it command:attemptConnection?
@@ -334,14 +334,14 @@ async def processHTTPCommand(commandRequest):
             # Check if PSK is in allowedList
             if splitData[2] in myGlobals.allowedPskList:
                 # PIN auth not needed, set response string to reflect
-                responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + myGlobals.connectionTimeOut
+                responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
                 print('=========================================')
                 print("No PIN Required, PSK Found")
                 print('=========================================')
             else:
                 # No PSK found, generate PIN
                 myGlobals.generatedPin = str(random.randint(10000, 99999))
-                responseString = 'response|True|' + str(myGlobals.allowAudioRedirection) + "|" + myGlobals.connectionTimeOut
+                responseString = 'response|True|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
                 print('=========================================')
                 print("Connection PIN is: " + myGlobals.generatedPin)
                 print('=========================================')
@@ -349,7 +349,7 @@ async def processHTTPCommand(commandRequest):
                                     
         else:
             # PIN auth disabled, allow client to connect automatically
-            responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + myGlobals.connectionTimeOut
+            responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
             print('=========================================')
             print("PIN Auth disabled")
             print('=========================================')
@@ -371,6 +371,7 @@ async def processHTTPCommand(commandRequest):
                 myGlobals.currentConnection = 'connected'
                 # # Start sending screen data
                 print('--- No PIN Generated, Auto-Connecting ---')
+                myGlobals.connectedTime = time.time()
                 return web.Response(content_type="text/html", text="response:accepted")
               
             else:

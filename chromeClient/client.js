@@ -4,8 +4,8 @@
 var serverAudioAllowed = false;
 var sendClientAudio = true;
 var pinAuthRequired = false;
-var requestedWidth = 1280;
-var requestedHeight = 720;
+var requestedWidth = 1920;
+var requestedHeight = 1080;
 var pc = null;
 var mediaStream;
 var generatedPSK = 'none';
@@ -34,7 +34,7 @@ async function startWebRTCMirroring(serverIP) {
             width: { ideal: requestedWidth, max: requestedWidth },
             height: { ideal: requestedHeight, max: requestedHeight }
         },
-        audio: sendClientAudio, // Set to true if you want to capture audio as well
+        audio: true, // Set to true if you want to capture audio as well
         surfaceSwitching: "include", // Allow user to switch displayMedia source
         systemAudio: "include" // Capture system audio, not individual tab audio
     });
@@ -148,7 +148,12 @@ function attemptConnectionWithPIN() {
     var PINValue = document.getElementById('pinText').value;
 
     // Define connection data
-    var postString = ("command:connect|" + PINValue)
+    if (PINValue == '') {
+        var postString = ("command:connect|" + "000000")
+    }
+    else {
+        var postString = ("command:connect|" + PINValue)
+    }
 
     console.log("Sending: " + postString)
 
@@ -179,6 +184,11 @@ function attemptConnectionWithPIN() {
 }
 
 function showConnectionPanel() {
+
+    var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
+    pinConnectingGhostElement.style.opacity = '100%';
+    pinConnectingGhostElement.style.pointerEvents = 'all';
+
     // Change CSS options for interactableGhost to show correctly
     var interactableGhostDiv = document.getElementById('interactableGhost');
     interactableGhostDiv.style.opacity = '100%';
@@ -217,25 +227,27 @@ function connectToServer() {
             serverAudioAllowed = responseDataSplit[2];
 
             // Modify Ghost data
-            if (pinAuthRequired == false) {
+            if (pinAuthRequired == "False") {
                 var pinRequiredGhostElement = document.getElementById('pinRequiredGhost');
                 pinRequiredGhostElement.style.opacity = '50%';
                 pinRequiredGhostElement.style.pointerEvents = 'none';
 
                 var pinSubmitButtonElement = document.getElementById('pinSubmitButton');
-                pinSubmitButton.innerHTML = 'Connect To Server'
+                pinSubmitButtonElement.innerHTML = 'Connect To Server'
+
+                var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
+                pinConnectingGhostElement.style.opacity = '100%';
+                pinConnectingGhostElement.style.pointerEvents = 'all';
             }
 
-            if (serverAudioAllowed == false) {
+            if (serverAudioAllowed == "False") {
                 var audioAllowedGhostElement = document.getElementById('audioAllowedGhost');
                 audioAllowedGhostElement.style.opacity = '50%';
                 audioAllowedGhostElement.style.pointerEvents = 'none';
             }
 
 
-            if (pinAuthRequired) {
-                showConnectionPanel()
-            }
+            showConnectionPanel()
         }
 
     })
@@ -298,10 +310,6 @@ function stopCasting() {
     var pinSubmitButtonElement = document.getElementById('pinSubmitButton');
     pinSubmitButton.innerHTML = 'Submit PIN'
 
-    // var audioAllowedGhostElement = document.getElementById('audioAllowedGhost');
-    // audioAllowedGhostElement.style.opacity = '100%';
-    // audioAllowedGhostElement.style.pointerEvents = 'all';
-
     // Main ghost 
     var interactableGhostElement = document.getElementById('interactableGhost');
     interactableGhostElement.style.opacity = '50%';
@@ -310,6 +318,10 @@ function stopCasting() {
     // Reset PIN
     var pinTextElement = document.getElementById('pinText');
     pinTextElement.value = '';
+
+    var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
+    pinConnectingGhostElement.style.opacity = '50%';
+    pinConnectingGhostElement.style.pointerEvents = 'none';
 
 }
 
@@ -400,6 +412,10 @@ function loadStorageVariables() {
         
         uniqueHostname = hostnameStorageBit
     }
+
+    var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
+    pinConnectingGhostElement.style.opacity = '50%';
+    pinConnectingGhostElement.style.pointerEvents = 'none';
 
     console.log("Hostname: " + uniqueHostname)
 }

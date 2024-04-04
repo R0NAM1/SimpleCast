@@ -37,7 +37,7 @@ latestVideoFrame = None
 globalPcObject = None
 processFrames = False
 gotSDPResponse = False
-connectedTime = ''
+connectedTime = 0
 
 
 # Having this instead of grabbing from an interface forces you to keep it static in some way
