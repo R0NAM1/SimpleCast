@@ -4,8 +4,8 @@
 var serverAudioAllowed = false;
 var sendClientAudio = true;
 var pinAuthRequired = false;
-var requestedWidth = 1920;
-var requestedHeight = 1080;
+var requestedWidth = 1280;
+var requestedHeight = 720;
 var pc = null;
 var mediaStream;
 var generatedPSK = 'none';

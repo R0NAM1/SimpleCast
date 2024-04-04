@@ -1,4 +1,4 @@
-import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors
+import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors, signal
 from threading import Thread, active_count
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCConfiguration, RTCIceServer, RTCDataChannel, RTCRtpCodecParameters
 from aiortc.mediastreams import VideoFrame
@@ -11,6 +11,14 @@ from datetime import datetime
 from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, drawNextSlideShowFrameTick, aspectRatioResizeFixedHeight
 from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
 import myGlobals
+
+# Register Sigint handler
+def sigint_handler(signum ,frame):
+    print("SIGINT Received, exiting...")
+    # Kill all UUID webrtc live events
+    
+    myGlobals.sigIntReceived = True
+    sys.exit(0)
 
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
@@ -235,29 +243,30 @@ def readConfigurationFile():
 
 # While sendBroadcastPacket, send one every two seconds
 def sendBroadcastPacketWhileTrue():
-    print("=== Broadcast Thread Started ===")
-    # Open udp socket with IPV4 to send broadcast traffic on
-    broadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    
-    # Bind socket to fixed port on all interfaces, port 1337. Clients must recieve on this port as well
-    broadcastSocket.bind(('', 1337))
-    
-    # Enable the broadcast option on the socket (1) 
-    broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    
-    # While sendBroadcastPacket is true, will be false when client stops
-    while myGlobals.sendBroadcastPacket:
-        # Generate string to send to lan, has serverName and connection status
-        broadcastDataString = (str(myGlobals.serverName) + "|" + str(myGlobals.currentConnection)).encode()
+    if myGlobals.sendBroadcastPacket:
+        print("=== Broadcast Thread Started ===")
+        # Open udp socket with IPV4 to send broadcast traffic on
+        broadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
-        # Send broadcast packet to entire subnet
-        broadcastSocket.sendto(broadcastDataString, ("255.255.255.255", 1337))
+        # Bind socket to fixed port on all interfaces, port 1337. Clients must recieve on this port as well
+        broadcastSocket.bind(('', 1337))
         
-        # Wait 2 seconds to repeat
-        time.sleep(2)
+        # Enable the broadcast option on the socket (1) 
+        broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        
+        # While sendBroadcastPacket is true, will be false when client stops
+        while myGlobals.sendBroadcastPacket and myGlobals.sigIntReceived == False:
+            # Generate string to send to lan, has serverName and connection status
+            broadcastDataString = (str(myGlobals.serverName) + "|" + str(myGlobals.currentConnection)).encode()
+            
+            # Send broadcast packet to entire subnet
+            broadcastSocket.sendto(broadcastDataString, ("255.255.255.255", 1337))
+            
+            # Wait 2 seconds to repeat
+            time.sleep(2)
 
-    # When sendBroadcastPacket is False, close socket 
-    broadcastSocket.close()
+        # When sendBroadcastPacket is False, close socket 
+        broadcastSocket.close()
     
 # Wait for connection, when we get one process PSK provided,
 # If we use PIN Authentication, check if PSK is allowed, if not generate PIN
@@ -411,7 +420,7 @@ def pyGameConstantUpdating():
         
     # Constant check, wrap in while True for now
     # While thread is running
-    while True:
+    while myGlobals.sigIntReceived == False:
         # Always draw black background to catch any pixels not drawn previously (Move to connected?)
         drawBlackCatchBackground(blackBackground)
         
@@ -486,6 +495,21 @@ def pyGameConstantUpdating():
 
         # End of connection specific logic, all things drawn, now update display
         pygame.display.flip() 
+        
+        # Check if pygame event quit was received
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                # Got pygame quit, call sigIntReceived
+                myGlobals.sigIntReceived = True
+                
+    # Primary Loop, check if myGlobals.sigIntReceived is True
+    if myGlobals.sigIntReceived == True:
+        print("SigInt Quit Set, Stopping!")
+        myGlobals.globalPcObject.close()
+        myGlobals.pyAudioDevice.terminate()
+        pygame.quit()
+        sys.exit()
+        
     
     # Wrap around to while
 ##############################
@@ -539,6 +563,10 @@ def pyAudioInit():
         
 # Program start
 if __name__ == '__main__':
+    # Register Sigint handler
+    signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGTERM, sigint_handler)
+    
     # Read configuration data into memory
     readConfigurationFile()
     

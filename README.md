@@ -13,7 +13,6 @@ Features (will) include:
 - Ability to pause casting
 - PSK clients can kick other clients and toggle castability to the server
 - Windows, Mac and Linux clients (Python Script Bundled into Native Execution Format)
-- Chrome Extension (Eventually, so it can be used on ChromeOs devices)
 - Individual application window capture if I can find a cross platform library for it
 - Broadcast traffic for passive discovery and mDNS for active discovery
 
@@ -22,8 +21,12 @@ Features (will) include:
 - ✓ Make github page for quick downloads (r0nam1.github.io/simplecast, put into link shortener)
     https://bit.ly/simplecast-client -> https://r0nam1.github.io/SimpleCast/
 - ✓ TransItion all 'globals' to myGlobals
-- Add sigint handling
+- ~✓ Add sigint handling (Work's better, issues with AioHTTP and AioRTC, but on 'open' it works)
+
 - Allow PSK to kick connection, disable/enable casting
+- Fix image resizing on server
+- Do info drawing scaling
+- Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
 - Finish Browser Extension Clients, maybe finish native OS client in the future?
 - Website grabbing for slideshow, every slideshow loop flip info to act as screensaver
 - Test edgecases
