@@ -1,25 +1,29 @@
-import queue
-# Init certain globals here, then can be imported
-global screenObject, slideshowBackgrounds, serverName, slideShowTimer, slideshowIndexTracker, backgroundToDraw, oldBackground, fading, connectionTimer
-
-# PyGame screen object
+# PyGame screen objects
 screenObject = None
 slideshowBackgrounds = []
+guiScale = "medium"
 
 # slideShowTimer
 slideShowTimer = 'f'
 slideshowIndexTracker = 0
 backgroundToDraw = ''
-fading = False
 oldBackground = ''
 shuffleWallpapers = False
-guiScale = "medium"
+fading = False
+
+# Server Settings
+serverName = 'noNameFoundSomethingIsWrong'
+usePINAuthentication = True
+allowAudioRedirection = False
+allowedPskList = []
+sendBroadcastPacket = True
+slideshowAlphaStepdown = 5
+
 
 # Other
 connectionTimer = 0
 nearestConnectionInt = 20
 connectionTimeOut = 20
-serverName = 'noNameFoundSomethingIsWrong'
 clientHostname = ''
 generatedPin = 'False'
 pyAudioDevice = None
@@ -27,6 +31,13 @@ pyAudioStream = None
 pyAudioBufferQueue = None
 isPaused = False
 pauseSurface = None
+currentConnection = 'open'
+clientIP = ''
+latestVideoFrame = None
+globalPcObject = None
+processFrames = False
+gotSDPResponse = False
+connectedTime = ''
 
 
 # Having this instead of grabbing from an interface forces you to keep it static in some way

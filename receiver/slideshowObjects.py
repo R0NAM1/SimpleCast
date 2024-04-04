@@ -134,7 +134,7 @@ def drawNextSlideShowFrameTick():
             if myGlobals.oldBackground.get_alpha() == 0:
                 myGlobals.fading = False
             else:
-                myGlobals.oldBackground.set_alpha(myGlobals.oldBackground.get_alpha() - 5)
+                myGlobals.oldBackground.set_alpha(myGlobals.oldBackground.get_alpha() - myGlobals.slideShowAlphaStepDown)
 
             # Draw oldBackground above newBackground
             myGlobals.screenObject.blit(myGlobals.backgroundToDraw, (0, 0))

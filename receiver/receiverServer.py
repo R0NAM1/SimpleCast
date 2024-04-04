@@ -12,47 +12,19 @@ from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, dra
 from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
 import myGlobals
 
-global clientIP, latestVideoFrame, connectedTime, gotSDPResponse, processFrames, pingPongTime, sendBroadcastPacket, allowAudioRedirection, usePINAuthentication, allowedPskList, currentConnection
-# Global variables initialization
-
-# Client info variables
-currentConnection = 'open'
-clientIP = ''
-
-# Config variables
-allowAudioRedirection = False
-usePINAuthentication = True
-allowedPskList = []
-
-# Server variables
-sendBroadcastPacket = True
-# Needed so that we can set STUN correctly
-# Latest videoFrame object from AioRTC
-latestVideoFrame = None
-
-# AioRTC PcObject
-globalPcObject = None
-# Ping pong object to track active connection, if above 3 seconds, assume connection lost
-pingPongTime = 0
-# Process Frames?
-processFrames = False
-
-gotSDPResponse = False
-connectedTime = ''
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
 async def startReceivingScreenDataOverRTP(sdpObject):
-    global latestVideoFrame, globalPcObject, pingPongTime, gotSDPResponse
     
     sdpObjectText = await sdpObject.text()
     sdpObjectOriginIP = sdpObject.remote
     
     print("=== Got SDP Offer From " + sdpObjectOriginIP + " ===")
-    gotSDPResponse = True
+    myGlobals.gotSDPResponse = True
     
     # Check if request ip is clientIp and currentConnection is connected
     
-    if (sdpObjectOriginIP == clientIP) and (currentConnection == 'connected'):
+    if (sdpObjectOriginIP == myGlobals.clientIP) and (myGlobals.currentConnection == 'connected'):
         
         print("=== Client ALLOWED, start RTC ===")
         # Create local peer object, set remote peer to clientSdpOfferSessionDescription
@@ -61,12 +33,12 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             iceServers=[RTCIceServer(
                 urls=[stunServer])]))
         
-        globalPcObject = serverPeer
+        myGlobals.globalPcObject = serverPeer
         
         serverPeer.addTransceiver('video', direction='recvonly')
         # If we can and are allowed to redirect audio
         # Check if client is sending audio by checking SDP for m=audio
-        if (allowAudioRedirection == True) and ("m=audio" in sdpObjectText):
+        if (myGlobals.allowAudioRedirection == True) and ("m=audio" in sdpObjectText):
             # Add transceiver
             serverPeer.addTransceiver('audio', direction='recvonly')
             # Initialize pyaudio stream
@@ -99,50 +71,48 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         
         # Schedule task to run to gather frames
         async def processVideoFrames():
-            global latestVideoFrame, globalPcObject, processFrames, allowAudioRedirection
                     
             # Wait one second for sctp to establish
             await asyncio.sleep(1)
             receivers = serverPeer.getReceivers()
             lastFrame = time.time()
-            processFrames = True
+            myGlobals.processFrames = True
             startTime = time.time()
         
             for rec in receivers:
                 # Wrap over video and audio receivers, grab frames from each
                 if rec.track.kind == "video":
-                    while processFrames:
+                    while myGlobals.processFrames:
                         # Wrap in try statement, if Exception ignore
                         try:
                             # Load video, wrap aronud timeout so we don't block forever, 5 seconds
-                            latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
+                            myGlobals.latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
                             
-                            # print("Got video frame: " + str(latestVideoFrame))
+                            # print("Got video frame: " + str(myGlobals.latestVideoFrame))
                             # Below is frame delay calculations to see it, make it into a debug mode someday
                             calc = str(time.time() - lastFrame)
                             lastFrame = time.time()
-                            # size = str(calculate_frame_size_in_bytes(latestVideoFrame))
-                            # print("Got video frame, time diff: " + str(calc[:8]) + ", Size: " + str(0) + ", PTS: " + str(latestVideoFrame.pts))
+                            # size = str(calculate_frame_size_in_bytes(myGlobals.latestVideoFrame))
+                            # print("Got video frame, time diff: " + str(calc[:8]) + ", Size: " + str(0) + ", PTS: " + str(myGlobals.latestVideoFrame.pts))
                             # print("Got video frame, time diff: " + str(calc[:8]))
                             
                         except Exception as e:
                             print("MediaPlayer Failed, " + str(e))
-                            await globalPcObject.close()
-                            processFrames = False
+                            await myGlobals.globalPcObject.close()
+                            myGlobals.processFrames = False
                             setInitalValues()
                             break
         
         async def processAudioFrames():
-            global latestVideoFrame, globalPcObject, processFrames, allowAudioRedirection
             # Wait one second for sctp to establish
             await asyncio.sleep(1)
             receivers = serverPeer.getReceivers()
             lastFrame = time.time()
-            processFrames = True
+            myGlobals.processFrames = True
                         
             for rec in receivers:
                 if rec.track.kind == "audio":
-                    while processFrames == True:
+                    while myGlobals.processFrames == True:
                         # Wrap in try statement, if Exception ignore
                         try:
                             # Load video, wrap aronud timeout so we don't block forever, 5 seconds
@@ -161,20 +131,20 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             
                         except Exception as e:
                             print("AudioMediaPlayer Failed, pass, " + str(e))
-                            processFrames = False
+                            myGlobals.processFrames = False
                             # Close audio stream
                             time.sleep(0.2)
                             myGlobals.pyAudioStream.stop_stream()
                             myGlobals.pyAudioStream.close()
                             # If audioPlayer fails close stream
-                            await globalPcObject.close()
+                            await myGlobals.globalPcObject.close()
                             # setInitalValues()
                             break
                             # myGlobals.pyAudioDevice.terminate()
 
 
 
-        if allowAudioRedirection:
+        if myGlobals.allowAudioRedirection:
             asyncio.create_task(processAudioFrames())
             asyncio.create_task(processVideoFrames())
         else:
@@ -189,15 +159,16 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         # 418 Teapot, 401 not authorized
         return web.Response(content_type="text/html", status=418, text="response:notAuthorized")
 
-
+## Redo better later
 # Read configuration file, set global variables based on that
 def readConfigurationFile():
-    global allowAudioRedirection, usePINAuthentication, allowedPskList
     print("=== Reading Configuration Data ===")
     try:
         with open('simpleCastConfig.json') as config_file:
+            # Load into JSON object
             jsonObject = json.load(config_file)
         
+            ############
             # Set server name based on JSON, if string is empty default to hostname
             if jsonObject['serverName'] == "":
                 myGlobals.serverName = socket.gethostname()
@@ -206,20 +177,25 @@ def readConfigurationFile():
                 
             print("Server Name: " + str(myGlobals.serverName))
         
+            ############
             # Check if PIN Authentication is enabled
-            usePINAuthentication = jsonObject['usePINAuthentication']
-            print("PIN Authentication: " + str(usePINAuthentication))
+            myGlobals.usePINAuthentication = jsonObject['usePINAuthentication']
+            print("PIN Authentication: " + str(myGlobals.usePINAuthentication))
             
+            ############
             # Check audio redirection
-            allowAudioRedirection = jsonObject['allowAudioRedirection']
-            print("Audio Redirection: " + str(allowAudioRedirection))
+            myGlobals.allowAudioRedirection = jsonObject['allowAudioRedirection']
+            print("Audio Redirection: " + str(myGlobals.allowAudioRedirection))
 
+            ############
             # Grab PSK List
-            allowedPskList = jsonObject['allowedPskList']
-            print("Allowed PSK List: " + str(allowedPskList))
+            myGlobals.allowedPskList = jsonObject['allowedPskList']
+            print("Allowed PSK List: " + str(myGlobals.allowedPskList))
             
+            ############
             # Load slideshow images into variable, verify if file exists first
             verifyArray = jsonObject['slideshowPictures']
+            
             for slideBack in verifyArray:
                 # Make sure file exists in path, must be in backgrounds/
                 absolutePath = 'backgrounds/' + slideBack
@@ -229,17 +205,29 @@ def readConfigurationFile():
                 else:
                     print("File does not exist, " + str(slideBack))
                     
-            # Read server IP from config
+            ############
+            # # Read server IP from config
             myGlobals.thisServersIpAddress = jsonObject['serverIP']
             
+            ############
             # Should shuffle slideshow?
             myGlobals.shuffleWallpapers = jsonObject['shuffleSlideshow']
             
+            ############
             # Set GUI scale, three options, low, medium, high
             myGlobals.guiScale = jsonObject['connectionScreenScale']
             
+            ############
             # Load countDownTime, default 20
             myGlobals.connectionTimeOut = jsonObject['countDownTime']
+            
+            ############
+            # Load slideShowAlphaStepDown
+            myGlobals.slideShowAlphaStepDown = jsonObject['slideshowAlphaStepdown']
+            
+            ############
+            # Load sendBroadcastPacket
+            myGlobals.sendBroadcastPacket = jsonObject['doBroadcastDiscovery']
 
     except Exception as e:
         print("Exception Reading From Config File, Follows: " + str(e))
@@ -247,7 +235,6 @@ def readConfigurationFile():
 
 # While sendBroadcastPacket, send one every two seconds
 def sendBroadcastPacketWhileTrue():
-    global currentConnection
     print("=== Broadcast Thread Started ===")
     # Open udp socket with IPV4 to send broadcast traffic on
     broadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -259,9 +246,9 @@ def sendBroadcastPacketWhileTrue():
     broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     
     # While sendBroadcastPacket is true, will be false when client stops
-    while sendBroadcastPacket:
+    while myGlobals.sendBroadcastPacket:
         # Generate string to send to lan, has serverName and connection status
-        broadcastDataString = (str(myGlobals.serverName) + "|" + str(currentConnection)).encode()
+        broadcastDataString = (str(myGlobals.serverName) + "|" + str(myGlobals.currentConnection)).encode()
         
         # Send broadcast packet to entire subnet
         broadcastSocket.sendto(broadcastDataString, ("255.255.255.255", 1337))
@@ -276,7 +263,6 @@ def sendBroadcastPacketWhileTrue():
 # If we use PIN Authentication, check if PSK is allowed, if not generate PIN
 # Wait for client to send connect command, with or without pin
 async def processHTTPCommand(commandRequest):
-    global usePINAuthentication, allowedPskList, clientIP, currentConnection, connectedTime, gotSDPResponse
                 
     # Main loop, wait for connection on port, check if currentConnection is 'open'
     # If so continue, if not drop connection with 'error:connected'      
@@ -293,7 +279,7 @@ async def processHTTPCommand(commandRequest):
     if splitData[0] == 'command:statusProbe':
         # Got a probe request, return wanted data,
         # serverName|serverStatus 
-        returnString = (myGlobals.serverName + "|" + currentConnection)
+        returnString = (myGlobals.serverName + "|" + myGlobals.currentConnection)
             
         # Return string to client, break connection and reset
         return web.Response(content_type="text/html", text=returnString)
@@ -301,7 +287,7 @@ async def processHTTPCommand(commandRequest):
     # Is client asking to pause?
     elif (splitData[0] == 'command:pause'):
         # Verify status is connected and clientIP Matches
-        if (thisClientIP == clientIP) and (currentConnection == 'connected'):
+        if (thisClientIP == myGlobals.clientIP) and (myGlobals.currentConnection == 'connected'):
             
             if myGlobals.isPaused == False:
             # Toggle isPaused
@@ -318,7 +304,7 @@ async def processHTTPCommand(commandRequest):
 
     
     # Process command, is it command:attemptConnection?
-    elif (splitData[0] == 'command:attemptConnection') and currentConnection == 'open':
+    elif (splitData[0] == 'command:attemptConnection') and myGlobals.currentConnection == 'open':
         
         # Set connectionTimer to current time
         myGlobals.connectionTimer = time.time()   
@@ -330,8 +316,8 @@ async def processHTTPCommand(commandRequest):
         print('=========================================')
             
         # Set currentConnection to connecting
-        currentConnection = 'connecting'
-        clientIP = thisClientIP
+        myGlobals.currentConnection = 'connecting'
+        myGlobals.clientIP = thisClientIP
         
         # Set hostname
         myGlobals.clientHostname = splitData[1]
@@ -343,19 +329,19 @@ async def processHTTPCommand(commandRequest):
         responseString = ''
             
         # If PIN auth is enabled, process PSK to see if we need to use it
-        if usePINAuthentication == True:
+        if myGlobals.usePINAuthentication == True:
            
             # Check if PSK is in allowedList
-            if splitData[2] in allowedPskList:
+            if splitData[2] in myGlobals.allowedPskList:
                 # PIN auth not needed, set response string to reflect
-                responseString = 'response|False|' + str(allowAudioRedirection)
+                responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + myGlobals.connectionTimeOut
                 print('=========================================')
                 print("No PIN Required, PSK Found")
                 print('=========================================')
             else:
                 # No PSK found, generate PIN
                 myGlobals.generatedPin = str(random.randint(10000, 99999))
-                responseString = 'response|True|' + str(allowAudioRedirection)
+                responseString = 'response|True|' + str(myGlobals.allowAudioRedirection) + "|" + myGlobals.connectionTimeOut
                 print('=========================================')
                 print("Connection PIN is: " + myGlobals.generatedPin)
                 print('=========================================')
@@ -363,7 +349,7 @@ async def processHTTPCommand(commandRequest):
                                     
         else:
             # PIN auth disabled, allow client to connect automatically
-            responseString = 'response|False|' + str(allowAudioRedirection)
+            responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + myGlobals.connectionTimeOut
             print('=========================================')
             print("PIN Auth disabled")
             print('=========================================')
@@ -373,16 +359,16 @@ async def processHTTPCommand(commandRequest):
                             
     # Expected next response, if no PIN was generated, then we don't need to check it, client can connect immediently              
                             
-    elif (splitData[0] == "command:connect") and (currentConnection == 'connecting'):
+    elif (splitData[0] == "command:connect") and (myGlobals.currentConnection == 'connecting'):
         # Check if IP matches and currentConnection = 'connecting'
-        if clientIP == thisClientIP and currentConnection == 'connecting':
+        if myGlobals.clientIP == thisClientIP and myGlobals.currentConnection == 'connecting':
             # Client is authorized
             loop = asyncio.get_event_loop()
             # Branch processing if we generated a PIN or no
             
             if myGlobals.generatedPin == "False":
                 # PIN was not generated, so client can immediently connect
-                currentConnection = 'connected'
+                myGlobals.currentConnection = 'connected'
                 # # Start sending screen data
                 print('--- No PIN Generated, Auto-Connecting ---')
                 return web.Response(content_type="text/html", text="response:accepted")
@@ -392,8 +378,8 @@ async def processHTTPCommand(commandRequest):
                 if splitData[1] == myGlobals.generatedPin:
                     # PIN Correct
                     print('--- PIN Accepted, connecting...')
-                    currentConnection = 'connected'
-                    connectedTime = time.time()
+                    myGlobals.currentConnection = 'connected'
+                    myGlobals.connectedTime = time.time()
                     return web.Response(content_type="text/html", text="response:accepted")
                 else:
                     print('--- PIN REJECTED')
@@ -411,7 +397,6 @@ async def processHTTPCommand(commandRequest):
 # connecting means show psk if one is generated and who is trying to connect
 # connected means show frameBuffer
 def pyGameConstantUpdating():
-    global currentConnection, latestVideoFrame, globalPcObject, pingPongTime, connectedTime, gotSDPResponse
     
     # Load display info
     displayInfo = pygame.display.Info()
@@ -426,11 +411,11 @@ def pyGameConstantUpdating():
     # Constant check, wrap in while True for now
     # While thread is running
     while True:
-        # Always draw black background as catch
+        # Always draw black background to catch any pixels not drawn previously (Move to connected?)
         drawBlackCatchBackground(blackBackground)
         
         # Check currentConnection
-        if currentConnection == 'open':
+        if myGlobals.currentConnection == 'open':
             # Should set these everytime we are open, just in case
             setInitalValues()
             
@@ -442,7 +427,7 @@ def pyGameConstantUpdating():
 
             ## END OF OPEN
             
-        elif currentConnection == 'connecting':
+        elif myGlobals.currentConnection == 'connecting':
             # A client is connecting, same as open plus draw box in middle that shows PIN if required, if all 0's, just show host connecting
             
             
@@ -461,17 +446,18 @@ def pyGameConstantUpdating():
                     
             ## END OF CONNECTING
             
-        elif currentConnection == 'connected':
+        elif myGlobals.currentConnection == 'connected':
             # Have connection, take latestVideoFrame and convert to surface object to draw on screen
             # Wrap in try, in case of exception since latestVideoFrame is none by default
             
-            # Check if paused
+            # Check if paused, if so draw a paused screen
             if myGlobals.isPaused:
                 drawPausedScreen(displayInfo)
             else:
+                # By default draw latest video frame from aiortc, worst case errors out when latestVideoFrame is non (AKA Black)
                 try:
                     # Transform VideoFrame object to RGB image in a bytearray                
-                    frameArray = latestVideoFrame.to_rgb().to_ndarray()
+                    frameArray = myGlobals.latestVideoFrame.to_rgb().to_ndarray()
                     # Make into a PyGame Surface
                     frameSurface = pygame.surfarray.make_surface(frameArray)
                     # Rotate 90 degrees to fix
@@ -493,7 +479,7 @@ def pyGameConstantUpdating():
                     pass
                 
             # If connected for more then connectionTimeOut seconds and gotSDPResponse is false, set back to open
-            if (time.time() - connectedTime > myGlobals.connectionTimeOut) and (gotSDPResponse == False):
+            if (time.time() - myGlobals.connectedTime > myGlobals.connectionTimeOut) and (myGlobals.gotSDPResponse == False):
                 print("SDP Response is False after 20 seconds, reset!")
                 setInitalValues()
 
@@ -501,8 +487,10 @@ def pyGameConstantUpdating():
         pygame.display.flip() 
     
     # Wrap around to while
+##############################
         
-# Initialize empty pygame window, hidden
+# Init pygame and start drawing thread
+# Does not work on multiple monitors, pygame limitation?
 def pygameInitializeBackgroundWaiting():
     # Initialize pygame
     pygame.init()
@@ -527,26 +515,24 @@ def pygameInitializeBackgroundWaiting():
     pyGameUpdateThread = Thread(target=pyGameConstantUpdating)
     pyGameUpdateThread.start()
         
-# Set initial connection values, 
+# Set initial connection values, meant to reset program to a starting state where nobody is connected. 
 def setInitalValues():
-    global currentConnection, clientIP, latestVideoFrame, gotSDPResponse
     # Reset connection to open
-    currentConnection = 'open'
+    myGlobals.currentConnection = 'open'
     # Reset client IP to empty
-    clientIP = ''
+    myGlobals.clientIP = ''
     # Reset Generated PIN
     myGlobals.generatedPin = 'False'
     # Reset client hostname
     myGlobals.clientHostname = ''
     # Reset latestVideoFrame so last frame isn't carried over
-    latestVideoFrame = None
+    myGlobals.latestVideoFrame = None
     # Change gotSDPResponse
-    gotSDPResponse = False
+    myGlobals.gotSDPResponse = False
     
 # Initialize pyAudio
 def pyAudioInit():
-    global allowAudioRedirection
-    if allowAudioRedirection == True:
+    if myGlobals.allowAudioRedirection == True:
         myGlobals.pyAudioDevice = pyaudio.PyAudio()
     
         
@@ -555,7 +541,7 @@ if __name__ == '__main__':
     # Read configuration data into memory
     readConfigurationFile()
     
-    # Init audio
+    # Attempt to init audio
     pyAudioInit()
     
     # Initialize vars
@@ -571,7 +557,7 @@ if __name__ == '__main__':
     # Init AioHTTP Webapp
     app = web.Application()
     
-    # Init cors setup  
+    # CORS Setup, because it is needed.
     cors = aiohttp_cors.setup(app, defaults={
     "*": aiohttp_cors.ResourceOptions(
         allow_credentials=True,
@@ -584,16 +570,15 @@ if __name__ == '__main__':
     # Add route for client communication
     commandResource = cors.add(app.router.add_resource("/command"))
     cors.add(commandResource.add_route("POST", processHTTPCommand))
-    # app.router.add_post("/command", processHTTPCommand)
     
     # Add route for client trying to attempt RTC connection
     sdpOfferResource = cors.add(app.router.add_resource("/sdpOffer"))
     cors.add(sdpOfferResource.add_route("POST", startReceivingScreenDataOverRTP))
-    # app.router.add_post("/sdpOffer", startReceivingScreenDataOverRTP)
 
     # Start AioHTTP server on port 4825, wait for connection
     print("=== Opened HTTP port on 4825 ===")
     # Empty space
     print('')
 
+    # Start web app
     web.run_app(app, host='0.0.0.0', port=4825)    
