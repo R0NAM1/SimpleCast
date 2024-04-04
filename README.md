@@ -18,10 +18,10 @@ Features (will) include:
 - Broadcast traffic for passive discovery and mDNS for active discovery
 
 ## TODO
-✓ Tell client server timeout
-✓ Make github page for quick downloads (r0nam1.github.io/simplecast, put into link shortener)
+- ✓ Tell client server timeout
+- ✓ Make github page for quick downloads (r0nam1.github.io/simplecast, put into link shortener)
     https://bit.ly/simplecast-client -> https://r0nam1.github.io/SimpleCast/
-✓ TransItion all 'globals' to myGlobals
+- ✓ TransItion all 'globals' to myGlobals
 - Add sigint handling
 - Allow PSK to kick connection, disable/enable casting
 - Finish Browser Extension Clients, maybe finish native OS client in the future?
@@ -33,17 +33,18 @@ Features (will) include:
 - Implement mDNS discovery for browser client
 
 ## SimpleCast Config Keys & Possible Values
-| Config Key | Possible Values |
-| serverName: The name that the server displays and broadcasts | String, "Conference Room 1" |
-| usePINAuthentication: Force PIN authentication or allow anybody to connect at anytime from anywhere | Boolean, true or false |
-| allowAudioRedirection: Allow clients to cast audio to the server | Boolean, true or false |
-| allowedPskList: List of client PSK's that have authority over the server, usually assigned Teachers or equivilent | String array, ["psk1", "psk2"] |
-| slideshowPictures: List of pictures in backgrounds folder to display, can also be a URL with http locator (Eventually) | String array, ["0.jpg", "1.jpg"] |
-| serverIP: The IP Address of the primary interface the server uses, forces you to make it static or static lease | String, "10.42.255.249" |
-| shuffleSlideshow: Either show background slides in sequencial order, or randomly shuffle | Boolena, true or false |
-| connectionScreenScale: The size of information drawn on the 'open' screen | String, "low", "meduim" or "high" |
-| countDownTime: How long to wait until a connecting client becomes invalid | Integer, 20 |
-| slideshowAlphaStepdown: Amount to step down fading slideshow transitions | Integer, 1 - 255, Do 255 for no fading |
-| doBroadcastDiscovery: Enable or disable subnet broadcast traffic to advertise server | Boolean, true or false |
+| Config Key | Meaning | Possible Values |
+| ---------- | ------- | --------------- |
+| `serverName` | The name that the server displays and broadcasts | String, "Conference Room 1" |
+| `usePINAuthentication` | Force PIN authentication or allow anybody to connect at anytime from anywhere | Boolean, true or false |
+| `allowAudioRedirection` | Allow clients to cast audio to the server | Boolean, true or false |
+| `allowedPskList` | List of client PSK's that have authority over the server, usually assigned Teachers or equivilent | String array, ["psk1", "psk2"] |
+| `slideshowPictures` | List of pictures in backgrounds folder to display, can also be a URL with http locator (Eventually) | String array, ["0.jpg", "1.jpg"] |
+| `serverIP` | The IP Address of the primary interface the server uses, forces you to make it static or static lease | String, "10.42.255.249" |
+| `shuffleSlideshow` | Either show background slides in sequencial order, or randomly shuffle | Boolena, true or false |
+| `connectionScreenScale` | The size of information drawn on the 'open' screen | String, "low", "meduim" or "high" |
+| `countDownTime` | How long to wait until a connecting client becomes invalid | Integer, 20 |
+| `slideshowAlphaStepdown` | Amount to step down fading slideshow transitions | Integer, 1 - 255, Do 255 for no fading |
+| `doBroadcastDiscovery` | Enable or disable subnet broadcast traffic to advertise server | Boolean, true or false |
 
   
