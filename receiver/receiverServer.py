@@ -563,14 +563,16 @@ def pyGameConstantUpdating():
                         frameSurface = aspectRatioResizeFixedHeight(frameSurface)
                         # Set originX to be in the middle, displayWidth - FrameWidth = Difference, (Difference / 2)
                         coordDifference = (displayInfo.current_w - frameSurface.get_width())
-                        originX = (coordDifference / 2)
+                        if coordDifference > 0:
+                            originX = (coordDifference / 2)
                     
                     # If width is bigger then height, resize by width
                     elif (frameSurface.get_width() > frameSurface.get_height()):
                         frameSurface = aspectRatioResizeFixedWidth(frameSurface)
                         # Set originY to be in the middle, displayHeight - FrameHeight = Difference, (Difference / 2)
                         coordDifference = (displayInfo.current_h - frameSurface.get_height())
-                        originY = (coordDifference / 2)
+                        if coordDifference > 0:
+                            originY = (coordDifference / 2)
                     
                     # Set paused surface
                     myGlobals.pauseSurface = frameSurface
