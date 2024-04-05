@@ -1,6 +1,12 @@
 <img src="logo-pallete.png" alt="SimpleCast Logo, a smiling face using the WiFi symbol as a wink" width="200"/> <br />
 
-This is a simple AioRTC based software that takes your current screen and audio buffer and sends them over the network via the WebRTC standard to 'cast' to another display. Completely complient with WebRTC and HTTP standards, so implementing a custom client is easy.
+SimpleCast is an AioRTC based software that takes your current screen and audio buffer and sends them over the network via the WebRTC standard to 'cast' to another display. Completely complient with WebRTC and HTTP standards, so implementing a custom client is easy.
+
+For use anywhere that wireless casting akin to a ChromeCast is wanted, but with more management and the ability to do pin authentication.
+Not a replacement for an HDMI cable if one can be ran. Depending on hardware ran on it might be able to display 4K, it cannot STREAM 4k,
+has a hard time with 1080p, defaults to 720p for balance between framerate and resolution. 
+
+Try different display resolutions between 720p, 1080p and 4K and see how smooth the slideshow transition is, usually a good gauge.
 
 Client Downloads:
 https://r0nam1.github.io/SimpleCast/
@@ -16,25 +22,6 @@ Features (will) include:
 - Individual application window capture if I can find a cross platform library for it
 - Broadcast traffic for passive discovery and mDNS for active discovery
 
-## TODO
-- ✓ Tell client server timeout
-- ✓ Make github page for quick downloads (r0nam1.github.io/simplecast, put into link shortener)
-    https://bit.ly/simplecast-client -> https://r0nam1.github.io/SimpleCast/
-- ✓ TransItion all 'globals' to myGlobals
-- ~✓ Add sigint handling (Work's better, issues with AioHTTP and AioRTC, but on 'open' it works)
-- ✓ Allow PSK to kick connection
-- ✓ Allow PSK to disable/enable casting
-
-- Fix image resizing on server
-- Do info drawing scaling
-- Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
-- Finish Browser Extension Clients, maybe finish native OS client in the future?
-- Website grabbing for slideshow, every slideshow loop flip info to act as screensaver
-- Test edgecases
-- Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
-- Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
-- Add option to replace slideshow with video file, like a cozy fireplace or livestream (Rosa the Sea Otter?) 
-- Implement mDNS discovery for browser client
 
 ## SimpleCast Config Keys & Possible Values
 | Config Key | Meaning | Value Type | Value Example |
@@ -51,4 +38,25 @@ Features (will) include:
 | `slideshowAlphaStepdown` | Amount to step down fading slideshow transitions | Integer | 1 - 255, Do 255 for no fading |
 | `doBroadcastDiscovery` | Enable or disable subnet broadcast traffic to advertise server | Boolean | true or false |
 
+
+## TODO
+- ✓ Tell client server timeout
+- ✓ Make github page for quick downloads (r0nam1.github.io/simplecast, put into link shortener)
+    https://bit.ly/simplecast-client -> https://r0nam1.github.io/SimpleCast/
+- ✓ TransItion all 'globals' to myGlobals
+- ~✓ Add sigint handling (Work's better, issues with AioHTTP and AioRTC, but on 'open' it works)
+- ✓ Allow PSK to kick connection
+- ✓ Allow PSK to disable/enable casting
+- ✓ Fix image resizing on server
+- Do info drawing scaling
+
+- Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
+- Implement mDNS discovery for browser client
+- Finish Browser Extension Clients, glow up and CSS overhaul
+- Website grabbing for slideshow, add thread to do screenshots every 30 seconds
+- Allow option to flip info and text on screen every slideshow loop (Amount of I) for burn in protection
+- Test all edgecases
+- Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
+- Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
+- Add option to replace slideshow with video file, like a cozy fireplace or livestream (Rosa the Sea Otter?) 
   

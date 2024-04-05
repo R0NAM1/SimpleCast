@@ -8,7 +8,7 @@ from aiohttp import web
 from datetime import datetime
 
 # SimpleCast specific imports
-from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, drawNextSlideShowFrameTick, aspectRatioResizeFixedHeight
+from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, drawNextSlideShowFrameTick, aspectRatioResizeFixedHeight, aspectRatioResizeFixedWidth
 from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
 import myGlobals
 
@@ -554,14 +554,29 @@ def pyGameConstantUpdating():
                     frameSurface = pygame.transform.rotate(frameSurface, 90)
                     # Flip upsidedown to flip image
                     frameSurface = pygame.transform.flip(frameSurface, False, True)
-                    # Resize surface to fit display by fixed height
-                    frameSurface = aspectRatioResizeFixedHeight(frameSurface)
+                    
+                    originX = 0
+                    originY = 0
+                    
+                    # If height is bigger then width, resize by height
+                    if (frameSurface.get_height() > frameSurface.get_width()):
+                        frameSurface = aspectRatioResizeFixedHeight(frameSurface)
+                        # Set originX to be in the middle, displayWidth - FrameWidth = Difference, (Difference / 2)
+                        coordDifference = (displayInfo.current_w - frameSurface.get_width())
+                        originX = (coordDifference / 2)
+                    
+                    # If width is bigger then height, resize by width
+                    elif (frameSurface.get_width() > frameSurface.get_height()):
+                        frameSurface = aspectRatioResizeFixedWidth(frameSurface)
+                        # Set originY to be in the middle, displayHeight - FrameHeight = Difference, (Difference / 2)
+                        coordDifference = (displayInfo.current_h - frameSurface.get_height())
+                        originY = (coordDifference / 2)
                     
                     # Set paused surface
                     myGlobals.pauseSurface = frameSurface
                     
                     # Draw frameSurface to PyGame
-                    myGlobals.screenObject.blit(frameSurface, (0, 0))
+                    myGlobals.screenObject.blit(frameSurface, (originX, originY))
                     
                 except Exception as e:
                     # Called if latestVideoFrame is None usually, is ok to pass
