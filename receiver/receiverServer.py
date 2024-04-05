@@ -303,6 +303,7 @@ def readConfigurationFile():
             ############
             # Set GUI scale, three options, low, medium, high
             myGlobals.guiScale = jsonObject['connectionScreenScale']
+            print("GUI Scale: " + str(myGlobals.guiScale))
             
             ############
             # Load countDownTime, default 20
@@ -496,7 +497,7 @@ def pyGameConstantUpdating():
     blackBackground.fill((0, 0, 0))
             
     # Create time font object
-    font = pygame.font.Font(None, 40)
+    font = pygame.font.Font(None, round(40 * myGlobals.guiScale))
         
     # Constant check, wrap in while True for now
     # While thread is running

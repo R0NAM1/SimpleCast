@@ -1,7 +1,7 @@
 # PyGame screen objects
 screenObject = None
 slideshowBackgrounds = []
-guiScale = "medium"
+guiScale = 1
 
 # slideShowTimer
 slideShowTimer = 'f'

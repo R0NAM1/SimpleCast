@@ -125,8 +125,8 @@ def drawPausedScreen(displayInfo):
     twelveHourString = currentTime.strftime("%I:%M:%S %p")
     
     # Create font objects
-    dateStringFont = pygame.font.Font(None, 30)
-    twelveHourStringFont = pygame.font.Font(None, 60)
+    dateStringFont = pygame.font.Font(None, round(30 * myGlobals.guiScale))
+    twelveHourStringFont = pygame.font.Font(None, round(60 * myGlobals.guiScale))
     
     # Render to surfaces
     dateStringSurface = dateStringFont.render(dateString, True, (255, 255, 255))
@@ -146,9 +146,11 @@ def drawPausedScreen(displayInfo):
 # Draw current connecting client and PIN if found, 
 def drawConnectingInformation():    
     # New font object
-    font = pygame.font.Font(None, 25)
-    timerFont = pygame.font.Font(None, 40)
-    fontPin = pygame.font.Font(None, 210)
+    font = pygame.font.Font(None, round(25 * myGlobals.guiScale))
+    timerFont = pygame.font.Font(None, round(40 * myGlobals.guiScale))
+    fontPin = pygame.font.Font(None, round(210 * myGlobals.guiScale))
+    
+    
     
     connectingString = (myGlobals.clientHostname + " is attemping to connect...")
     calculateConnectionDiff = (time.time() - myGlobals.connectionTimer)

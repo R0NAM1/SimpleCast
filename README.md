@@ -33,7 +33,7 @@ Features (will) include:
 | `slideshowPictures` | List of pictures in backgrounds folder to display, can also be a URL with http locator (Eventually) | String array | ["0.jpg", "1.jpg"] |
 | `serverIP` | The IP Address of the primary interface the server uses, forces you to make it static or static lease | String | "10.42.255.249" |
 | `shuffleSlideshow` | Either show background slides in sequencial order, or randomly shuffle | Boolean | true or false |
-| `connectionScreenScale` | The size of information drawn on the 'open' screen | String | "low", "meduim" or "high" |
+| `connectionScreenScale` | The size of information drawn on the 'open' screen | Float | "low: 0.5", "meduim: 1" or "high: 1.5" or anything else |
 | `countDownTime` | How long to wait until a connecting client becomes invalid | Integer | 20 |
 | `slideshowAlphaStepdown` | Amount to step down fading slideshow transitions | Integer | 1 - 255, Do 255 for no fading |
 | `doBroadcastDiscovery` | Enable or disable subnet broadcast traffic to advertise server | Boolean | true or false |
@@ -48,15 +48,15 @@ Features (will) include:
 - ✓ Allow PSK to kick connection
 - ✓ Allow PSK to disable/enable casting
 - ✓ Fix image resizing on server
-- Do info drawing scaling
-
+- ✓ Do info drawing scaling
 - Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
-- Implement mDNS discovery for browser client
-- Finish Browser Extension Clients, glow up and CSS overhaul
+
 - Website grabbing for slideshow, add thread to do screenshots every 30 seconds
 - Allow option to flip info and text on screen every slideshow loop (Amount of I) for burn in protection
 - Test all edgecases
 - Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
 - Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
 - Add option to replace slideshow with video file, like a cozy fireplace or livestream (Rosa the Sea Otter?) 
+- Implement mDNS discovery for browser client
+- Finish Browser Extension Clients, glow up and CSS overhaul
   
