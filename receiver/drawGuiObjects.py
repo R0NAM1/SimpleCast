@@ -18,8 +18,22 @@ def drawRoundedRectangle(widthHeightTuple, positionTuple):
 # Name, Time, IP Address
 def pyGameDrawInformation(font):
     
-        connectionStringTop = 'To cast, download the'
-        connectionStringBottom = 'SimpleCast app and select'
+        if myGlobals.infoScreenConnectionText == 'default':
+            connectionStringTop = 'To cast, download the'
+            connectionStringBottom = 'SimpleCast app and select'
+            
+        elif myGlobals.infoScreenConnectionText == 'link':
+            connectionStringTop = 'Download the app at'
+            connectionStringBottom = 'bit.ly/simplecast-client'
+        
+        elif myGlobals.infoScreenConnectionText == 'name':
+            connectionStringTop = ''
+            connectionStringBottom = ''
+            
+        else:
+            connectionStringTop = 'To cast, open the'
+            connectionStringBottom = 'SimpleCast app and select'
+        
     
         # Show current time
         # Get time
@@ -69,7 +83,7 @@ def pyGameDrawInformation(font):
         serverNamePositionWhite = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height()) - (3 + 5)))
         
         # Position for connection text top
-        connectionTextPositionWhiteTop = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height() + connectionTextBottomWhite.get_height())) - (3 + 10)))
+        connectionTextPositionWhiteTop = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height() + connectionTextBottomWhite.get_height())) - (5 + 10)))
              
         # Position for connection text top
         connectionTextPositionWhiteBottom = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height())) - (3 + 10)))
@@ -84,13 +98,22 @@ def pyGameDrawInformation(font):
             # connectionTextBottomWhite is bigger
             widthToUse = connectionTextBottomWhite.get_width()
 
-        combinedHeight = connectionTextBottomWhite.get_height() + connectionTextTopWhite.get_height() + serverNameTextWhite.get_height()
+        if myGlobals.infoScreenConnectionText == 'name':
+            combinedHeight = (connectionTextBottomWhite.get_height() * 2)
+            
+            posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight / 2)) - 25)
+            
+            if myGlobals.castingToggle == True:
+                drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
         
-        # Connection info box
-        posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight)) - 25)
+        else:
+            combinedHeight = connectionTextBottomWhite.get_height() + connectionTextTopWhite.get_height() + serverNameTextWhite.get_height()
+            # Connection info box
+            posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight)) - 25)
+            
+            if myGlobals.castingToggle == True:
+                drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
         
-        if myGlobals.castingToggle == True:
-            drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
         
         
         # Blit both it to screen

@@ -37,6 +37,7 @@ Features (will) include:
 | `countDownTime` | How long to wait until a connecting client becomes invalid | Integer | 20 |
 | `slideshowAlphaStepdown` | Amount to step down fading slideshow transitions | Integer | 1 - 255, Do 255 for no fading |
 | `doBroadcastDiscovery` | Enable or disable subnet broadcast traffic to advertise server | Boolean | true or false |
+| `infoScreenConnectionText` | What connect text should the 'open' screen show | String | "link" to show bit.ly link, "name" for just the server name, "default" for default text |  
 
 
 ## TODO
@@ -49,7 +50,7 @@ Features (will) include:
 - ✓ Allow PSK to disable/enable casting
 - ✓ Fix image resizing on server
 - ✓ Do info drawing scaling
-- Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
+- ✓ Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
 
 - Website grabbing for slideshow, add thread to do screenshots every 30 seconds
 - Allow option to flip info and text on screen every slideshow loop (Amount of I) for burn in protection

@@ -18,6 +18,7 @@ allowAudioRedirection = False
 allowedPskList = []
 sendBroadcastPacket = True
 slideshowAlphaStepdown = 5
+infoScreenConnectionText = 'default'
 
 
 # Other

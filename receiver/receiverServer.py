@@ -317,6 +317,10 @@ def readConfigurationFile():
             # Load sendBroadcastPacket
             myGlobals.sendBroadcastPacket = jsonObject['doBroadcastDiscovery']
 
+            ############
+            # Load infoScreenConnectionText
+            myGlobals.infoScreenConnectionText = jsonObject['infoScreenConnectionText']
+            
     except Exception as e:
         print("Exception Reading From Config File, Follows: " + str(e))
         sys.exit()

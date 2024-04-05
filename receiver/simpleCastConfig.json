@@ -9,6 +9,7 @@
     "connectionScreenScale": 1,
     "countDownTime": 20,
     "slideshowAlphaStepdown": 5,
-    "doBroadcastDiscovery": false
+    "doBroadcastDiscovery": false,
+    "infoScreenConnectionText": "default"
 }
   
