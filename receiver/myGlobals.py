@@ -39,7 +39,7 @@ processFrames = False
 gotSDPResponse = False
 connectedTime = 0
 sigIntReceived = False
-
+castingToggle = True
 
 
 # Having this instead of grabbing from an interface forces you to keep it static in some way

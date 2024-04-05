@@ -89,7 +89,8 @@ def pyGameDrawInformation(font):
         # Connection info box
         posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight)) - 25)
         
-        drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
+        if myGlobals.castingToggle == True:
+            drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
         
         
         # Blit both it to screen
@@ -97,12 +98,14 @@ def pyGameDrawInformation(font):
         myGlobals.screenObject.blit(dateTextWhite, dateTextPositionWhite)
         # Draw time text with outline, 2nd top right
         myGlobals.screenObject.blit(timeTextWhite, timeTextPositionWhite)
-        # Draw server name with outline, bottom left
-        myGlobals.screenObject.blit(serverNameTextWhite, serverNamePositionWhite)
-        # Draw connection text, bottom left
-        myGlobals.screenObject.blit(connectionTextTopWhite, connectionTextPositionWhiteTop)
-        # Draw connectionBottom text, bottom left
-        myGlobals.screenObject.blit(connectionTextBottomWhite, connectionTextPositionWhiteBottom)
+        
+        if myGlobals.castingToggle == True:
+            # Draw server name with outline, bottom left
+            myGlobals.screenObject.blit(serverNameTextWhite, serverNamePositionWhite)
+            # Draw connection text, bottom left
+            myGlobals.screenObject.blit(connectionTextTopWhite, connectionTextPositionWhiteTop)
+            # Draw connectionBottom text, bottom left
+            myGlobals.screenObject.blit(connectionTextBottomWhite, connectionTextPositionWhiteBottom)
         
 # Draw pauseSurface, half opacity black surface, then time and date
 def drawPausedScreen(displayInfo):

@@ -54,6 +54,50 @@ async def kickCurrentConnection(commandRequest):
     else:
         return web.Response(content_type="text/html", status=401, text="response:notValidCommand")
 
+# If valid PSK, allow ability to toggle ability to cast
+async def toggleCasting(commandRequest):
+    # Expects commandRequest text of 'command:toggle|PSK'
+    textData = await commandRequest.text()
+    thisClientIP = commandRequest.remote
+    
+    print("=== Got command: " + str(textData) + " from client " + str(thisClientIP) + " ===")
+           
+    # Split data recieved
+    splitData = textData.split("|")
+    if splitData[0] == 'command:toggleCast':
+        # Check if PSK exists, if not send 401
+        if splitData[1] in myGlobals.allowedPskList:
+            
+            if myGlobals.currentConnection == 'open':
+                # If is open, continue
+                pass
+            else:
+                # Not open, reset to open
+                
+                try:
+                    await myGlobals.globalPcObject.close()
+                except:
+                    pass
+                
+                setInitalValues()
+            
+            
+            print("=== Valid PKS, Toggling ability to cast ===")
+    
+            # Toggle boolean
+            if myGlobals.castingToggle == False:
+                myGlobals.castingToggle = True
+                return web.Response(content_type="text/html", status=200, text="response:enabledCasting")
+            
+            elif myGlobals.castingToggle == True:
+                myGlobals.castingToggle = False
+                return web.Response(content_type="text/html", status=200, text="response:disabledCasting")
+    
+        else:
+            # PSK Does not exist, cannot kick connection
+            return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
+    else:
+        return web.Response(content_type="text/html", status=401, text="response:notValidCommand")
 
 
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
@@ -348,7 +392,8 @@ async def processHTTPCommand(commandRequest):
 
     
     # Process command, is it command:attemptConnection?
-    elif (splitData[0] == 'command:attemptConnection') and myGlobals.currentConnection == 'open':
+    # Eventually change castingToggle to a status? Is a possibility
+    elif (splitData[0] == 'command:attemptConnection') and myGlobals.currentConnection == 'open' and myGlobals.castingToggle == True:
         
         # Set connectionTimer to current time
         myGlobals.connectionTimer = time.time()   
@@ -467,7 +512,7 @@ def pyGameConstantUpdating():
             # Draw slideShowBackground
             drawNextSlideShowFrameTick()
             
-            # Draw Server Information
+            # Draw Server Information # DO myGlobals.castingToggle == True
             pyGameDrawInformation(font)
 
             ## END OF OPEN
@@ -642,6 +687,10 @@ if __name__ == '__main__':
     # Add route for kicking current connection
     kickResource = cors.add(app.router.add_resource("/kick"))
     cors.add(kickResource.add_route("POST", kickCurrentConnection))
+    
+    # Add route for toggling ability to cast
+    toggleResource = cors.add(app.router.add_resource("/toggle"))
+    cors.add(toggleResource.add_route("POST", toggleCasting))
     
     # Start AioHTTP server on port 4825, wait for connection
     print("=== Opened HTTP port on 4825 ===")

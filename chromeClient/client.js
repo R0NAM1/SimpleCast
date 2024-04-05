@@ -318,6 +318,31 @@ function sendKickCommandToServer(kickButtonElement) {
     })
 }
 
+function sendToggleCommandToServer(toggleButtonElement) {
+
+    var serverIdText = document.getElementById('serverIdText').value;
+    var serverIdTextURL = 'http://' + serverIdText + ':4825/toggle'
+
+    // Define connection data
+    var postString = ("command:toggleCast|") + generatedPSK
+
+    // Send command
+    fetch(serverIdTextURL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+           'Content-Type': 'text/plain'
+        },
+        body: postString
+       }).then(function(response) {
+        return response.text();
+    }).then(function(responseData) {
+
+        console.log("Got response: " + responseData)
+
+    })
+}
+
 function stopCasting() {
     try {
         // Reset JS applet and stop rtc peer
@@ -486,6 +511,14 @@ function addEventListenersForAll() {
         sendKickCommandToServer(kickButtonElement)
     });
 
+
+    var toggleCastButtonElement = document.getElementById('toggleCastButton');
+
+    toggleCastButtonElement.addEventListener('click', function() {
+        sendToggleCommandToServer(toggleCastButtonElement)
+    });
+
+    
     // Resolution select listener
     var resolutionOptionsElement = document.getElementById('resolutionOptions');
 

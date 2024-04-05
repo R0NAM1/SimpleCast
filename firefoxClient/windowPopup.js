@@ -15,7 +15,7 @@ browser.action.onClicked.addListener(() => {
         url: chrome.runtime.getURL("client.html"),
         type: "popup",
         width: 400, // Desired width
-        height: 650, // Desired height
+        height: 850, // Desired height
       }).then(window => {
         extensionWindowId = window.id; // Store the new window ID
       });
