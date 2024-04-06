@@ -10,6 +10,7 @@
     "countDownTime": 20,
     "slideshowAlphaStepdown": 5,
     "doBroadcastDiscovery": false,
-    "infoScreenConnectionText": "default"
+    "infoScreenConnectionText": "default",
+    "infoTextAlignment": "flip"
 }
   

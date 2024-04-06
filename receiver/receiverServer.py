@@ -345,6 +345,10 @@ def readConfigurationFile():
             # Load infoScreenConnectionText
             myGlobals.infoScreenConnectionText = jsonObject['infoScreenConnectionText']
             
+            ############
+            # Load infoTextAlignment
+            myGlobals.infoTextAlignment = jsonObject['infoTextAlignment']
+            
     except Exception as e:
         print("Exception Reading From Config File, Follows: " + str(e))
         sys.exit()

@@ -1,3 +1,5 @@
+import time
+
 # PyGame screen objects
 screenObject = None
 slideshowBackgrounds = []
@@ -45,6 +47,9 @@ gotSDPResponse = False
 connectedTime = 0
 sigIntReceived = False
 castingToggle = True
+lastFlipTime = time.time()
+isScreenFlipped = False
+infoTextAlignment = 'flip'
 
 
 # Having this instead of grabbing from an interface forces you to keep it static in some way

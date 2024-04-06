@@ -38,7 +38,8 @@ Features (will) include:
 | `countDownTime` | How long to wait until a connecting client becomes invalid | Integer | 20 |
 | `slideshowAlphaStepdown` | Amount to step down fading slideshow transitions | Integer | 1 - 255, Do 255 for no fading |
 | `doBroadcastDiscovery` | Enable or disable subnet broadcast traffic to advertise server | Boolean | true or false |
-| `infoScreenConnectionText` | What connect text should the 'open' screen show | String | "link" to show bit.ly link, "name" for just the server name, "default" for default text |  
+| `infoScreenConnectionText` | What connect text should the 'open' screen show | String | "link" to show bit.ly link, "name" for just the server name, "default" for default text |
+| `infoTextAlignment` | Should the info text on open flip every 120 seconds, or be statically left or right | String | "flip", "left", "right" |
 
 
 ## TODO
@@ -53,9 +54,9 @@ Features (will) include:
 - ✓ Do info drawing scaling
 - ✓ Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
 - ✓ Website grabbing for slideshow, add thread to do screenshots every 60 seconds
+- ✓ Allow option to flip info and text on screen every 120 seconds for burn in protection
+- Test all edgecases?
 
-- Allow option to flip info and text on screen every slideshow loop (Amount of I) for burn in protection
-- Test all edgecases
 - Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
 - Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
 - Add option to replace slideshow with video file, like a cozy fireplace or livestream (Rosa the Sea Otter?) 

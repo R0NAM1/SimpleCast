@@ -18,6 +18,25 @@ def drawRoundedRectangle(widthHeightTuple, positionTuple):
 # Name, Time, IP Address
 def pyGameDrawInformation(font):
     
+        # Check if lastFlipTime is above 120, if so toggle
+        if myGlobals.infoTextAlignment == 'left':
+            myGlobals.isScreenFlipped = False
+        
+        elif myGlobals.infoTextAlignment == 'right':
+            myGlobals.isScreenFlipped = True
+            
+        else:
+            # is 'flip'
+            if (time.time() - myGlobals.lastFlipTime) > 120:
+                myGlobals.lastFlipTime = time.time()
+                
+                # Toggle isScreenFlipped
+                if myGlobals.isScreenFlipped == False:
+                    myGlobals.isScreenFlipped = True 
+                    
+                elif myGlobals.isScreenFlipped == True:
+                    myGlobals.isScreenFlipped = False
+    
         if myGlobals.infoScreenConnectionText == 'default':
             connectionStringTop = 'To cast, download the'
             connectionStringBottom = 'SimpleCast app and select'
@@ -63,34 +82,57 @@ def pyGameDrawInformation(font):
         serverNameTextWhite.set_alpha(240)
         
         # Calculate positions, top left is 0, 0 as origin
+        # Check if myGlobals.isScreenFlipped is false or true
         
-        # Top right, date (top right, anchor to right offset by 8, height is 8 down)
-        dateTextPositionWhite = ((myGlobals.screenObject.get_width() - dateTextWhite.get_width()) - 8, (8))
-        
-        # Top right, date (top right, anchor to right offset by 8, height is height of datetime + 8 down)
-        timeTextPositionWhite = ((myGlobals.screenObject.get_width() - timeTextWhite.get_width()) - 8, dateTextWhite.get_height() + 8)
-        
-        # DRAW Time date box
-        # position is top right offset by dateTextPosition width with 10 offset, height is date + time strings offset 20
-        posTuple = (((myGlobals.screenObject.get_width() - dateTextWhite.get_width()) - 20), 
-                    (0 - (dateTextWhite.get_height() + timeTextWhite.get_height())) + 20)
+        if myGlobals.isScreenFlipped == False:
+            # Top right, date (top right, anchor to right offset by 8, height is 8 down)
+            dateTextPositionWhite = ((myGlobals.screenObject.get_width() - dateTextWhite.get_width()) - 8, (8))
+            
+            # Top right, date (top right, anchor to right offset by 8, height is height of datetime + 8 down)
+            timeTextPositionWhite = ((myGlobals.screenObject.get_width() - timeTextWhite.get_width()) - 8, dateTextWhite.get_height() + 8)
+            
+            # DRAW Time date box
+            # position is top right offset by dateTextPosition width with 10 offset, height is date + time strings offset 20
+            posTuple = (((myGlobals.screenObject.get_width() - dateTextWhite.get_width()) - 20), 
+                        (0 - (dateTextWhite.get_height() + timeTextWhite.get_height())) + 20)
+        else:
+            # Top right, date (top right, anchor to right offset by 8, height is 8 down)
+            dateTextPositionWhite = ((0) + 8, (8))
+            
+            # Top right, date (top right, anchor to right offset by 8, height is height of datetime + 8 down)
+            timeTextPositionWhite = ((0) + 8, dateTextWhite.get_height() + 8)
+            
+            # DRAW Time date box
+            # position is top right offset by dateTextPosition width with 10 offset, height is date + time strings offset 20
+            posTuple = (((0 - dateTextWhite.get_width()) + 20), 
+                        (0 - (dateTextWhite.get_height() + timeTextWhite.get_height())) + 20)
 
         drawRoundedRectangle((((dateTextWhite.get_width()) * 2 ), ((dateTextWhite.get_height() + timeTextWhite.get_height()) * 2)), posTuple)
         
         
-        
-        # Bottom left, for name
-        serverNamePositionWhite = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height()) - (3 + 5)))
-        
-        # Position for connection text top
-        connectionTextPositionWhiteTop = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height() + connectionTextBottomWhite.get_height())) - (5 + 10)))
-             
-        # Position for connection text top
-        connectionTextPositionWhiteBottom = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height())) - (3 + 10)))
+        if myGlobals.isScreenFlipped == False:
+            # Bottom left, for name
+            serverNamePositionWhite = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height()) - (3 + 5)))
+            
+            # Position for connection text top
+            connectionTextPositionWhiteTop = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height() + connectionTextBottomWhite.get_height())) - (5 + 10)))
+                
+            # Position for connection text top
+            connectionTextPositionWhiteBottom = ((0 + 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height())) - (3 + 10)))
+        else:
+            # Bottom left, for name
+            serverNamePositionWhite = (((myGlobals.screenObject.get_width() - serverNameTextWhite.get_width()) - 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height()) - (3 + 5)))
+            
+            # Position for connection text top
+            connectionTextPositionWhiteTop = (((myGlobals.screenObject.get_width() - connectionTextTopWhite.get_width()) - 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height() + connectionTextBottomWhite.get_height())) - (5 + 10)))
+                
+            # Position for connection text top
+            connectionTextPositionWhiteBottom = (((myGlobals.screenObject.get_width() - connectionTextBottomWhite.get_width()) - 5), ((myGlobals.screenObject.get_height() - serverNameTextWhite.get_height() - (connectionTextTopWhite.get_height())) - (3 + 10)))
         
         widthToUse = 0
         
         # Calc widest surface
+        # Conn is bigger
         if (serverNameTextWhite.get_width() > connectionTextBottomWhite.get_width()):
             # Server name is bigger, use
             widthToUse = serverNameTextWhite.get_width()
@@ -98,18 +140,25 @@ def pyGameDrawInformation(font):
             # connectionTextBottomWhite is bigger
             widthToUse = connectionTextBottomWhite.get_width()
 
+
         if myGlobals.infoScreenConnectionText == 'name':
             combinedHeight = (connectionTextBottomWhite.get_height() * 2)
             
-            posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight / 2)) - 25)
-            
+            if myGlobals.isScreenFlipped == False:
+                posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight / 2)) - 25)
+            else:
+                posTuple = ((myGlobals.screenObject.get_width() - widthToUse) - 20, (myGlobals.screenObject.get_height() - (combinedHeight / 2)) - 25)
+                
             if myGlobals.castingToggle == True:
                 drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
         
         else:
             combinedHeight = connectionTextBottomWhite.get_height() + connectionTextTopWhite.get_height() + serverNameTextWhite.get_height()
             # Connection info box
-            posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight)) - 25)
+            if myGlobals.isScreenFlipped == False:
+                posTuple = ((0 - widthToUse) + 20, (myGlobals.screenObject.get_height() - (combinedHeight)) - 25)
+            else:
+                posTuple = ((myGlobals.screenObject.get_width() - widthToUse) - 20, (myGlobals.screenObject.get_height() - (combinedHeight)) - 25)
             
             if myGlobals.castingToggle == True:
                 drawRoundedRectangle(((widthToUse * 2), (combinedHeight * 2)), posTuple)
