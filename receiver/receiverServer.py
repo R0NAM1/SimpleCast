@@ -12,7 +12,7 @@ from PIL import Image
 
 # SimpleCast specific imports
 from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, drawNextSlideShowFrameTick, aspectRatioResizeFixedHeight, aspectRatioResizeFixedWidth
-from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
+from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen, drawDebugStats
 from seleniumRemoveElements import removeApplicableElements
 import myGlobals
 
@@ -166,7 +166,6 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             # Wait one second for sctp to establish
             await asyncio.sleep(1)
             receivers = serverPeer.getReceivers()
-            lastFrame = time.time()
             myGlobals.processFrames = True
             startTime = time.time()
         
@@ -180,12 +179,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             myGlobals.latestVideoFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
                             
                             # print("Got video frame: " + str(myGlobals.latestVideoFrame))
-                            # Below is frame delay calculations to see it, make it into a debug mode someday
-                            calc = str(time.time() - lastFrame)
-                            lastFrame = time.time()
-                            # size = str(calculate_frame_size_in_bytes(myGlobals.latestVideoFrame))
-                            # print("Got video frame, time diff: " + str(calc[:8]) + ", Size: " + str(0) + ", PTS: " + str(myGlobals.latestVideoFrame.pts))
-                            # print("Got video frame, time diff: " + str(calc[:8]))
+                            myGlobals.lastWebRTCVideoFrameReceived = time.time()
                             
                         except Exception as e:
                             print("MediaPlayer Failed, " + str(e))
@@ -348,7 +342,11 @@ def readConfigurationFile():
             ############
             # Load infoTextAlignment
             myGlobals.infoTextAlignment = jsonObject['infoTextAlignment']
-            
+
+             ############
+            # Load displayDebugStats
+            myGlobals.displayDebugStats = jsonObject['displayDebugStats']
+                    
     except Exception as e:
         print("Exception Reading From Config File, Follows: " + str(e))
         sys.exit()
@@ -623,8 +621,13 @@ def pyGameConstantUpdating():
                 print("SDP Response is False after 20 seconds, reset!")
                 setInitalValues()
 
+        if myGlobals.displayDebugStats == True:
+            drawDebugStats()
+
         # End of connection specific logic, all things drawn, now update display
-        pygame.display.flip() 
+        pygame.display.flip()
+        
+        myGlobals.timeLastFrameDrawn = time.time()
         
         # Check if pygame event quit was received
         for event in pygame.event.get():
@@ -653,6 +656,7 @@ def seleniumWebsiteScreenShotThread():
     
     # While program is running
     while myGlobals.sigIntReceived == False:
+        myGlobals.isSeleniumTakingScreenShots = True
         # Itterate over websiteScreenShotUrlArray
         thisIndex = 0
         options = Options()
@@ -669,7 +673,7 @@ def seleniumWebsiteScreenShotThread():
 
         driver = webdriver.Chrome(options=options)
         # Have had issues with window size while headless, needs to be less then current screen resolution, so take away 10, then resize with PIL
-        driver.set_window_size((myGlobals.screenObject.get_width() - 10), (myGlobals.screenObject.get_height() - 10))
+        driver.set_window_size((myGlobals.screenObject.get_width() * 0.80), (myGlobals.screenObject.get_height() * 0.80))
         
         for websiteUrl in myGlobals.websiteScreenShotUrlArray:
             if websiteUrl == None:
@@ -699,6 +703,7 @@ def seleniumWebsiteScreenShotThread():
         
         # Close driver
         driver.quit()
+        myGlobals.isSeleniumTakingScreenShots = False
         time.sleep(60)
         
 # Init pygame and start drawing thread

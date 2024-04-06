@@ -214,7 +214,78 @@ def drawPausedScreen(displayInfo):
     myGlobals.screenObject.blit(dateStringSurface, dateStringPositon)
     myGlobals.screenObject.blit(twelveHourStringSurface, twelveHourStringPositon)
 
-        
+def drawDebugStats():
+    try:
+        font = pygame.font.Font(None, round(50 * myGlobals.guiScale))
+        # Check if slowdown is above 200, then update
+        slowDownDiff = (time.time() - myGlobals.debugSlowdownTime) * 1000
+        if slowDownDiff > 200:    
+            
+            
+            # Calculate fps
+            lastFrameDrawnDiff = (time.time() - myGlobals.timeLastFrameDrawn)
+            fps = round(1 / lastFrameDrawnDiff)
+            fpsString = ("FPS: " + str(fps))
+            
+            # FPS
+            myGlobals.fpsSurface = font.render(fpsString, True, (255, 255, 255))
+            
+            # Current state
+            currentState = ("State: " + str(myGlobals.currentConnection))
+            myGlobals.stateSurface = font.render(currentState, True, (255, 255, 255))
+            
+            # Last webrtc video frame
+            if myGlobals.currentConnection == 'open':
+                videoString = ("WebRTC FPS: " + "Not Connected")
+            else:
+                timeDiff = (time.time() - myGlobals.lastWebRTCVideoFrameReceived)
+                vfps = round(1 / timeDiff)
+                videoString = ("WebRTC FPS: " + str(vfps))
+                
+            myGlobals.videoSurface = font.render(videoString, True, (255, 255, 255))
+            
+            # Is Selenium taking screenshots
+            seleniumState = ("Selenium Active: " + str(myGlobals.isSeleniumTakingScreenShots))
+            myGlobals.seleniumSurface = font.render(seleniumState, True, (255, 255, 255))
+            
+            # Display Resolution
+            displayState = ("Display Resolution: " + str(myGlobals.screenObject.get_width()) + "x" + str(myGlobals.screenObject.get_height()))
+            myGlobals.resolutionSurface = font.render(displayState, True, (255, 255, 255))
+            
+            # Draw background box
+            drawRoundedRectangle(((0 + 10 + myGlobals.resolutionSurface.get_width() + 50) * 2, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height()) * 2),
+                                 (0 - (0 + 10 + myGlobals.resolutionSurface.get_width() + 50), 0 - (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height())))
+            
+            myGlobals.screenObject.blit(myGlobals.fpsSurface, (0 + 10, 0 + 10))
+            myGlobals.screenObject.blit(myGlobals.stateSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height())))
+            myGlobals.screenObject.blit(myGlobals.videoSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height())))
+            myGlobals.screenObject.blit(myGlobals.seleniumSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height())))
+            myGlobals.screenObject.blit(myGlobals.resolutionSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height())))
+            
+            myGlobals.debugSlowdownTime = time.time()
+            
+        else:            
+            drawRoundedRectangle(((0 + 10 + myGlobals.resolutionSurface.get_width() + 50) * 2, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height()) * 2),
+                                 (0 - (0 + 10 + myGlobals.resolutionSurface.get_width() + 50), 0 - (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height())))
+                  
+            # FPS
+            myGlobals.screenObject.blit(myGlobals.fpsSurface, (0 + 10, 0 + 10))
+            
+            # Current state
+            myGlobals.screenObject.blit(myGlobals.stateSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height())))
+            
+            # Video FPS
+            myGlobals.screenObject.blit(myGlobals.videoSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height())))
+
+            # Selenium Active            
+            myGlobals.screenObject.blit(myGlobals.seleniumSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height())))
+
+            # Display resolution
+            myGlobals.screenObject.blit(myGlobals.resolutionSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height())))
+
+    except:
+        pass
+
 # Draw current connecting client and PIN if found, 
 def drawConnectingInformation():    
     # New font object

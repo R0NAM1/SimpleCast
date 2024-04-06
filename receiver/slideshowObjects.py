@@ -51,7 +51,7 @@ def loadImageOntoSurface(imageUri, thisIndex):
         except Exception as e:
             # IF fails, load 'could not capture' image
             # print("Loading 404 Image")
-            print(e)
+            # print(e)
             # Load URI into 
             loadedSurface = pygame.image.load('404.png').convert()
             

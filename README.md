@@ -40,6 +40,7 @@ Features (will) include:
 | `doBroadcastDiscovery` | Enable or disable subnet broadcast traffic to advertise server | Boolean | true or false |
 | `infoScreenConnectionText` | What connect text should the 'open' screen show | String | "link" to show bit.ly link, "name" for just the server name, "default" for default text |
 | `infoTextAlignment` | Should the info text on open flip every 120 seconds, or be statically left or right | String | "flip", "left", "right" |
+| `displayDebugStats` | Display debug stats on screen | Boolean | true or false |
 
 
 ## TODO
@@ -55,11 +56,10 @@ Features (will) include:
 - ✓ Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
 - ✓ Website grabbing for slideshow, add thread to do screenshots every 60 seconds
 - ✓ Allow option to flip info and text on screen every 120 seconds for burn in protection
-- Test all edgecases?
-
-- Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
+- ✓ Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
 - Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
-- Add option to replace slideshow with video file, like a cozy fireplace or livestream (Rosa the Sea Otter?) 
+
+- Test all edgecases?
 - Implement mDNS discovery for browser client
 - Finish Browser Extension Clients, glow up and CSS overhaul
   

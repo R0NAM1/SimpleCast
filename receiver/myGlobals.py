@@ -51,6 +51,23 @@ lastFlipTime = time.time()
 isScreenFlipped = False
 infoTextAlignment = 'flip'
 
+# Debug vars
+displayDebugStats = False
+debugSlowdownTime = time.time()
+timeLastFrameDrawn = time.time()
+lastWebRTCVideoFrameReceived = time.time()
+# Audio not needed, mirrors video
+isSeleniumTakingScreenShots = False
+# Display res
+# Current State 'open'
+# WebRTC Resolution
+
+# Debug surfaces
+fpsSurface = None
+stateSurface = None
+videoSurface = None
+seleniumSurface = None
+resolutionSurface = None
 
 # Having this instead of grabbing from an interface forces you to keep it static in some way
 thisServersIpAddress = ""

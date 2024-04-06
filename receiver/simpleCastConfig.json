@@ -11,6 +11,7 @@
     "slideshowAlphaStepdown": 5,
     "doBroadcastDiscovery": false,
     "infoScreenConnectionText": "default",
-    "infoTextAlignment": "flip"
+    "infoTextAlignment": "flip",
+    "displayDebugStats": false
 }
   
