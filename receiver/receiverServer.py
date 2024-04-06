@@ -1,4 +1,6 @@
-import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors, signal
+import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors, signal, io
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from threading import Thread, active_count
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCConfiguration, RTCIceServer, RTCDataChannel, RTCRtpCodecParameters
 from aiortc.mediastreams import VideoFrame
@@ -6,10 +8,12 @@ from aiortc.contrib.media import MediaPlayer, MediaBlackhole, MediaStreamTrack, 
 from aiortc.rtcrtpsender import RTCRtpSender
 from aiohttp import web
 from datetime import datetime
+from PIL import Image
 
 # SimpleCast specific imports
 from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, drawNextSlideShowFrameTick, aspectRatioResizeFixedHeight, aspectRatioResizeFixedWidth
 from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, drawPausedScreen
+from seleniumRemoveElements import removeApplicableElements
 import myGlobals
 
 # Register Sigint handler
@@ -284,13 +288,33 @@ def readConfigurationFile():
             verifyArray = jsonObject['slideshowPictures']
             
             for slideBack in verifyArray:
-                # Make sure file exists in path, must be in backgrounds/
-                absolutePath = 'backgrounds/' + slideBack
-                if os.path.isfile(absolutePath):
-                    # Exists, add to config
-                    myGlobals.slideshowBackgrounds.append(absolutePath)
-                else:
-                    print("File does not exist, " + str(slideBack))
+                # Check if starts with http, if so then treat as url
+                
+                if "http" in slideBack:
+                    # URL
+                    myGlobals.websiteBackgroundExists = True
+                    
+                    myGlobals.websiteScreenShotArray.append(None)
+                    myGlobals.websiteScreenShotUrlArray.append(slideBack)
+                    myGlobals.slideshowBackgrounds.append(slideBack)
+                
+                else: 
+                    # File
+                    # Make sure file exists in path, must be in backgrounds/
+                    absolutePath = 'backgrounds/' + slideBack
+                    if os.path.isfile(absolutePath):
+                        # Exists, add to config
+                        myGlobals.slideshowBackgrounds.append(absolutePath)
+                    else:
+                        print("File does not exist, " + str(slideBack))
+                    myGlobals.websiteScreenShotArray.append(None)
+                    myGlobals.websiteScreenShotUrlArray.append(None)
+                    
+            # Check if myGlobals.websiteBackgroundExists is true, if so start selenuimScreenShotThread
+            if myGlobals.websiteBackgroundExists == True:
+                seleniumWebsiteScreenShotThreadObject = Thread(target=seleniumWebsiteScreenShotThread)
+                seleniumWebsiteScreenShotThreadObject.start()
+                
                     
             ############
             # # Read server IP from config
@@ -615,6 +639,63 @@ def pyGameConstantUpdating():
     
     # Wrap around to while
 ##############################
+        
+def seleniumWebsiteScreenShotThread():
+    # Wait for pygame to start
+    time.sleep(5)
+    # Wanted to use Firefox but for some reason the page would never load, got stuck at
+    # driver.get, geckodriver being installed didn't help either, at least chrome works!
+    # Use in new headless mode to load extensions, namely ublock and dark reader
+    
+    # While program is running
+    while myGlobals.sigIntReceived == False:
+        # Itterate over websiteScreenShotUrlArray
+        thisIndex = 0
+        options = Options()
+        options.add_argument('--headless=new')
+        options.add_argument('--hide-scrollbars')
+        
+        # Need to add user agent or else we get 403's
+        options.add_argument("user-agent=Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36")
+
+        # Load extensions, ublock origin for ads and dark reader to make it NOT blinding, make configurable?
+        # Extensions got from github repos and repacked in local browser
+        options.add_extension('./seleniumChromeExtensions/uBlock0.chromium.crx')
+        options.add_extension('./seleniumChromeExtensions/darkreader-chrome-mv3-1.crx')
+
+        driver = webdriver.Chrome(options=options)
+        # Have had issues with window size while headless, needs to be less then current screen resolution, so take away 10, then resize with PIL
+        driver.set_window_size((myGlobals.screenObject.get_width() - 10), (myGlobals.screenObject.get_height() - 10))
+        
+        for websiteUrl in myGlobals.websiteScreenShotUrlArray:
+            if websiteUrl == None:
+                pass
+            else:
+                # Valid url in index, create new driver
+                # print("=== Grabbing screenshot of " + websiteUrl + " ===")
+                driver.get(websiteUrl)
+                # print("== Website Loaded == ")
+                # Do element processing if applicable
+                removeApplicableElements(driver, websiteUrl)
+                
+                # Grab screenshot and convert from png to rgba
+                screenShotPngPillow = Image.open(io.BytesIO(driver.get_screenshot_as_png()))
+                                
+                # Resize
+                screenShotPngPillow = screenShotPngPillow.resize((myGlobals.screenObject.get_width(), myGlobals.screenObject.get_height()))
+                
+                # Convert to RGBA
+                screenShotRGBA = screenShotPngPillow.convert('RGBA')
+                
+                # Store screenshot in memory
+                myGlobals.websiteScreenShotArray[thisIndex] = (screenShotRGBA.tobytes())
+                # print("== Finished ScreenShot Processing ==")
+                
+            thisIndex += 1
+        
+        # Close driver
+        driver.quit()
+        time.sleep(60)
         
 # Init pygame and start drawing thread
 # Does not work on multiple monitors, pygame limitation?

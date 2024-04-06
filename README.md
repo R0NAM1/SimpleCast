@@ -1,5 +1,8 @@
 <img src="logo-pallete.png" alt="SimpleCast Logo, a smiling face using the WiFi symbol as a wink" width="200"/> <br />
 
+Client Downloads:
+https://r0nam1.github.io/SimpleCast/
+
 SimpleCast is an AioRTC based software that takes your current screen and audio buffer and sends them over the network via the WebRTC standard to 'cast' to another display. Completely complient with WebRTC and HTTP standards, so implementing a custom client is easy.
 
 For use anywhere that wireless casting akin to a ChromeCast is wanted, but with more management and the ability to do pin authentication.
@@ -8,8 +11,6 @@ has a hard time with 1080p, defaults to 720p for balance between framerate and r
 
 Try different display resolutions between 720p, 1080p and 4K and see how smooth the slideshow transition is, usually a good gauge.
 
-Client Downloads:
-https://r0nam1.github.io/SimpleCast/
 
 Features (will) include:
 - Show a slideshow by default, will be customizable to either show a static image or a screenshot of a webpage, like AP NEWS headlines
@@ -51,8 +52,8 @@ Features (will) include:
 - ✓ Fix image resizing on server
 - ✓ Do info drawing scaling
 - ✓ Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
+- ✓ Website grabbing for slideshow, add thread to do screenshots every 60 seconds
 
-- Website grabbing for slideshow, add thread to do screenshots every 30 seconds
 - Allow option to flip info and text on screen every slideshow loop (Amount of I) for burn in protection
 - Test all edgecases
 - Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other

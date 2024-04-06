@@ -3,13 +3,17 @@ screenObject = None
 slideshowBackgrounds = []
 guiScale = 1
 
-# slideShowTimer
+# slideShowStuff
 slideShowTimer = 'f'
 slideshowIndexTracker = 0
 backgroundToDraw = ''
 oldBackground = ''
 shuffleWallpapers = False
 fading = False
+# Will mirror slideshowPictures, all local will be None for padding, while all http will be image
+websiteScreenShotArray = []
+websiteScreenShotUrlArray = []
+websiteBackgroundExists = False
 
 # Server Settings
 serverName = 'noNameFoundSomethingIsWrong'

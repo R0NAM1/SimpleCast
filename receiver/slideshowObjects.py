@@ -36,15 +36,41 @@ def aspectRatioResizeFixedHeight(surface):
     return scaledSurface
 
 # Load image uri into memory, scale too
-def loadImageOntoSurface(imageUri):
-    # Load URI into 
-    loadedSurface = pygame.image.load(imageUri).convert()
+def loadImageOntoSurface(imageUri, thisIndex):
+    if 'http' in imageUri:
+        try:
+            # print("Loading HTTP Screenshot")
+            # Grab image from websiteScreenShotArray
+            loadedSurface = pygame.image.frombytes(myGlobals.websiteScreenShotArray[thisIndex], (myGlobals.screenObject.get_width(), myGlobals.screenObject.get_height()), 'RGBA').convert()   
+            
+            # Convert surface into correct aspect ratio and resolution
+            loadedSurface = aspectRatioResizeFixedWidth(loadedSurface)
+            
+            # Return loaded and scaled surface object
+            return loadedSurface
+        except Exception as e:
+            # IF fails, load 'could not capture' image
+            # print("Loading 404 Image")
+            print(e)
+            # Load URI into 
+            loadedSurface = pygame.image.load('404.png').convert()
+            
+            # Convert surface into correct aspect ratio and resolution
+            loadedSurface = aspectRatioResizeFixedWidth(loadedSurface)
+            
+            # Return loaded and scaled surface object
+            return loadedSurface
     
-    # Convert surface into correct aspect ratio and resolution
-    loadedSurface = aspectRatioResizeFixedWidth(loadedSurface)
-    
-    # Return loaded and scaled surface object
-    return loadedSurface
+    else:
+        # print("Loading Local Image")
+        # Load URI into 
+        loadedSurface = pygame.image.load(imageUri).convert()
+        
+        # Convert surface into correct aspect ratio and resolution
+        loadedSurface = aspectRatioResizeFixedWidth(loadedSurface)
+        
+        # Return loaded and scaled surface object
+        return loadedSurface
 
 
 
@@ -76,7 +102,7 @@ def drawNextSlideShowFrameTick():
     # if slideshow timer is 'f' is first draw, set myGlobals.slideShowTimer
     if myGlobals.slideShowTimer == 'f':
         # Load first slideshow in array to backgroundSurface
-        myGlobals.backgroundToDraw = loadImageOntoSurface(myGlobals.slideshowBackgrounds[0])
+        myGlobals.backgroundToDraw = loadImageOntoSurface(myGlobals.slideshowBackgrounds[0], 0)
         
         # Blit onto screen, position is 0, 0, was originally going to be centered, but rule of thirds makes this look better
         # May add slow pan eventually, looks fine as is though
@@ -114,7 +140,7 @@ def drawNextSlideShowFrameTick():
                 myGlobals.slideshowIndexTracker = 0
         
         # Change background to new one, next in index
-        myGlobals.backgroundToDraw = loadImageOntoSurface(myGlobals.slideshowBackgrounds[myGlobals.slideshowIndexTracker])
+        myGlobals.backgroundToDraw = loadImageOntoSurface(myGlobals.slideshowBackgrounds[myGlobals.slideshowIndexTracker], myGlobals.slideshowIndexTracker)
                 
         # Blit onto screen
         myGlobals.screenObject.blit(myGlobals.oldBackground, (0, 0))
