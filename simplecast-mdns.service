@@ -1,9 +1,9 @@
 <?xml version="1.0" standalone='no'?>
 <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
 <service-group>
-  <name replace-wildcards="yes">Simplecast</name>
+  <name replace-wildcards="yes">simplecast</name>
   <service>
-    <type>_http._tcp</type>
+    <type>_simplecast._tcp</type>
     <port>4825</port>
   </service>
 </service-group>

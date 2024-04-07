@@ -225,7 +225,7 @@ def drawDebugStats():
             # Calculate fps
             lastFrameDrawnDiff = (time.time() - myGlobals.timeLastFrameDrawn)
             fps = round(1 / lastFrameDrawnDiff)
-            fpsString = ("FPS: " + str(fps))
+            fpsString = ("Display FPS: " + str(fps))
             
             # FPS
             myGlobals.fpsSurface = font.render(fpsString, True, (255, 255, 255))

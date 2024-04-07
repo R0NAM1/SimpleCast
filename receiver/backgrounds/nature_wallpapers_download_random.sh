@@ -30,7 +30,7 @@ echo "Downloading image 8"
 wget https://raw.githubusercontent.com/xiwenc/nature-wallpapers/master/src/jakub-gorajek-1542744-unsplash.jpg -O 8.jpg
 
 echo "Downloading image 9"
-wget https://raw.githubusercontent.com/xiwenc/nature-wallpapers/master/src/john-salzarulo-138024-unsplash.jpg-O 9.jpg
+wget https://raw.githubusercontent.com/xiwenc/nature-wallpapers/master/src/john-salzarulo-138024-unsplash.jpg -O 9.jpg
 
 echo "Downloading image 10"
 wget https://raw.githubusercontent.com/xiwenc/nature-wallpapers/master/src/patti-black-38177-unsplash.jpg -O 10.jpg
