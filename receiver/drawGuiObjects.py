@@ -252,21 +252,30 @@ def drawDebugStats():
             displayState = ("Display Resolution: " + str(myGlobals.screenObject.get_width()) + "x" + str(myGlobals.screenObject.get_height()))
             myGlobals.resolutionSurface = font.render(displayState, True, (255, 255, 255))
             
-            # Draw background box
-            drawRoundedRectangle(((0 + 10 + myGlobals.resolutionSurface.get_width() + 50) * 2, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height()) * 2),
-                                 (0 - (0 + 10 + myGlobals.resolutionSurface.get_width() + 50), 0 - (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height())))
+            # WebRTC Frame resolution
+            if myGlobals.latestVideoFrame == None:
+                rtcResState = ("WebRTC Resolution: " + str("Not Connected"))
+            else:
+                rtcResState = ("WebRTC Resolution: " + str(myGlobals.latestVideoFrame.width) + "x" + str(myGlobals.latestVideoFrame.height))
             
+            myGlobals.rtcResolutionSurface = font.render(rtcResState, True, (255, 255, 255))
+                       
+            # Draw background box
+            drawRoundedRectangle(((0 + 10 + myGlobals.rtcResolutionSurface.get_width() + 50) * 2, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height() + myGlobals.rtcResolutionSurface.get_height()) * 2),
+                                 (0 - (0 + 10 + myGlobals.rtcResolutionSurface.get_width() + 50), 0 - (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height() + myGlobals.rtcResolutionSurface.get_height())))
+                  
             myGlobals.screenObject.blit(myGlobals.fpsSurface, (0 + 10, 0 + 10))
             myGlobals.screenObject.blit(myGlobals.stateSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height())))
             myGlobals.screenObject.blit(myGlobals.videoSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height())))
             myGlobals.screenObject.blit(myGlobals.seleniumSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height())))
             myGlobals.screenObject.blit(myGlobals.resolutionSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height())))
+            myGlobals.screenObject.blit(myGlobals.rtcResolutionSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height())))
             
             myGlobals.debugSlowdownTime = time.time()
             
         else:            
-            drawRoundedRectangle(((0 + 10 + myGlobals.resolutionSurface.get_width() + 50) * 2, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height()) * 2),
-                                 (0 - (0 + 10 + myGlobals.resolutionSurface.get_width() + 50), 0 - (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height())))
+            drawRoundedRectangle(((0 + 10 + myGlobals.rtcResolutionSurface.get_width() + 50) * 2, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height() + myGlobals.rtcResolutionSurface.get_height()) * 2),
+                                 (0 - (0 + 10 + myGlobals.rtcResolutionSurface.get_width() + 50), 0 - (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height() + myGlobals.rtcResolutionSurface.get_height())))
                   
             # FPS
             myGlobals.screenObject.blit(myGlobals.fpsSurface, (0 + 10, 0 + 10))
@@ -282,6 +291,9 @@ def drawDebugStats():
 
             # Display resolution
             myGlobals.screenObject.blit(myGlobals.resolutionSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height())))
+
+            # RTC Resolution
+            myGlobals.screenObject.blit(myGlobals.rtcResolutionSurface, (0 + 10, (0 + 10 + myGlobals.fpsSurface.get_height() + myGlobals.stateSurface.get_height() + myGlobals.videoSurface.get_height() + myGlobals.seleniumSurface.get_height() + myGlobals.resolutionSurface.get_height())))
 
     except:
         pass

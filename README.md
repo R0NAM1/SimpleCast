@@ -57,9 +57,11 @@ Features (will) include:
 - ✓ Website grabbing for slideshow, add thread to do screenshots every 60 seconds
 - ✓ Allow option to flip info and text on screen every 120 seconds for burn in protection
 - ✓ Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
-- Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
+- ✓ Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
+- ✓ Test all edgecases. Should be fine, worst case hotpatch later
 
-- Test all edgecases?
+Receiver seems to be done, add systemd service and should be finished!
+
 - Implement mDNS discovery for browser client
 - Finish Browser Extension Clients, glow up and CSS overhaul
   

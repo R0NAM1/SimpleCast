@@ -16,10 +16,27 @@ from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, dra
 from seleniumRemoveElements import removeApplicableElements
 import myGlobals
 
+
+def logStringToFile(stringToWrite):
+    # We can always open with a, it will create the file if it does not exist
+    # Open file
+    logFile = open("./simplecast.log", "a")
+    
+    # Get time and date in format ## Month/Day/Year 13:00 Action
+    currentDateTime = datetime.now()
+    currentDateTime = currentDateTime.strftime("%m/%d/%Y %H:%M")
+    
+    # Assemble final string
+    finalLogString = "## " + currentDateTime + " | " + stringToWrite + "\r\n"
+    
+    logFile.write(finalLogString)
+    
+    # Close file
+    logFile.close()
+    
 # Register Sigint handler
 def sigint_handler(signum ,frame):
-    print("SIGINT Received, exiting...")
-    # Kill all UUID webrtc live events
+    logStringToFile('SigInt received, server should be shutting down!')
     
     myGlobals.sigIntReceived = True
     sys.exit(0)
@@ -30,19 +47,20 @@ async def kickCurrentConnection(commandRequest):
     textData = await commandRequest.text()
     thisClientIP = commandRequest.remote
     
-    print("=== Got command: " + str(textData) + " from client " + str(thisClientIP) + " ===")
            
     # Split data recieved
     splitData = textData.split("|")
     if splitData[0] == 'command:kick':
+        logStringToFile("Client " + str(thisClientIP) + " is trying to kick current connection")
         # Check if PSK exists, if not send 401
         if splitData[1] in myGlobals.allowedPskList:
             
             if myGlobals.currentConnection == 'open':
+                logStringToFile("-- Not possible, no active connection")
                 return web.Response(content_type="text/html", status=401, text="response:notConnected")
             else:
                 
-                print("=== Valid PKS, kicking current connection ===")
+                logStringToFile("-- Valid PSK, kicking active connection")
                 
                 try:
                     await myGlobals.globalPcObject.close()
@@ -54,6 +72,7 @@ async def kickCurrentConnection(commandRequest):
         
         else:
             # PSK Does not exist, cannot kick connection
+            logStringToFile("-- Invalid PSK, doing nothing")
             return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
     else:
         return web.Response(content_type="text/html", status=401, text="response:notValidCommand")
@@ -63,12 +82,11 @@ async def toggleCasting(commandRequest):
     # Expects commandRequest text of 'command:toggle|PSK'
     textData = await commandRequest.text()
     thisClientIP = commandRequest.remote
-    
-    print("=== Got command: " + str(textData) + " from client " + str(thisClientIP) + " ===")
-           
+               
     # Split data recieved
     splitData = textData.split("|")
     if splitData[0] == 'command:toggleCast':
+        logStringToFile("Client " + str(thisClientIP) + " is trying to toggle casting")
         # Check if PSK exists, if not send 401
         if splitData[1] in myGlobals.allowedPskList:
             
@@ -86,7 +104,8 @@ async def toggleCasting(commandRequest):
                 setInitalValues()
             
             
-            print("=== Valid PKS, Toggling ability to cast ===")
+            logStringToFile("-- Valid PSK, toggling casting")
+
     
             # Toggle boolean
             if myGlobals.castingToggle == False:
@@ -99,6 +118,7 @@ async def toggleCasting(commandRequest):
     
         else:
             # PSK Does not exist, cannot kick connection
+            logStringToFile("-- Invalid PSK, doing nothing")
             return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
     else:
         return web.Response(content_type="text/html", status=401, text="response:notValidCommand")
@@ -110,14 +130,14 @@ async def startReceivingScreenDataOverRTP(sdpObject):
     sdpObjectText = await sdpObject.text()
     sdpObjectOriginIP = sdpObject.remote
     
-    print("=== Got SDP Offer From " + sdpObjectOriginIP + " ===")
+    logStringToFile("Got SDP Offer From " + sdpObjectOriginIP + ", checking if valid")
     myGlobals.gotSDPResponse = True
     
     # Check if request ip is clientIp and currentConnection is connected
     
     if (sdpObjectOriginIP == myGlobals.clientIP) and (myGlobals.currentConnection == 'connected'):
         
-        print("=== Client ALLOWED, start RTC ===")
+        logStringToFile("Client is ALLOWED, starting RTC")
         # Create local peer object, set remote peer to clientSdpOfferSessionDescription
         stunServer = ("stun:" + myGlobals.thisServersIpAddress)
         serverPeer = RTCPeerConnection(configuration=RTCConfiguration(
@@ -139,7 +159,6 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             myGlobals.pyAudioStream = myGlobals.pyAudioDevice.open(format=pyFormat, channels=pyChannels, rate=pyRate, output=True, frames_per_buffer=9600)
             
         clientSdpOfferSessionDescription = RTCSessionDescription(sdpObjectText, 'offer')
-        print("Got SDP offer from client, generating response SDP")
             
         await serverPeer.setRemoteDescription(clientSdpOfferSessionDescription)
         
@@ -148,17 +167,6 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         
         # Set answer to local description
         await serverPeer.setLocalDescription(clientAnswer)
-        
-        print("Generated SDP response, returning")
-        
-        #TMP
-        def calculate_frame_size_in_bytes(frame):
-            total_size = 0
-            for plane in frame.planes:
-                # Calculate the size of the current plane in bytes
-                plane_size = plane.buffer_size
-                total_size += plane_size
-            return total_size
         
         # Schedule task to run to gather frames
         async def processVideoFrames():
@@ -182,7 +190,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             myGlobals.lastWebRTCVideoFrameReceived = time.time()
                             
                         except Exception as e:
-                            print("MediaPlayer Failed, " + str(e))
+                            # print("MediaPlayer Failed, " + str(e))
                             await myGlobals.globalPcObject.close()
                             myGlobals.processFrames = False
                             setInitalValues()
@@ -215,7 +223,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                                 myGlobals.pyAudioStream.write(audioBuffer.tobytes())
                             
                         except Exception as e:
-                            print("AudioMediaPlayer Failed, pass, " + str(e))
+                            # print("AudioMediaPlayer Failed, pass, " + str(e))
                             myGlobals.processFrames = False
                             # Close audio stream
                             time.sleep(0.2)
@@ -240,14 +248,14 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         return web.Response(content_type="text/html", text=serverPeer.localDescription.sdp)
                 
     else:
-        print("=== Client DENIED, notAuthorized ===")
+        logStringToFile("Client DENIED, not Authorized")
         # 418 Teapot, 401 not authorized
         return web.Response(content_type="text/html", status=401, text="response:notAuthorized")
 
 ## Redo better later
 # Read configuration file, set global variables based on that
 def readConfigurationFile():
-    print("=== Reading Configuration Data ===")
+    logStringToFile('Server started, reading config file')
     try:
         with open('simpleCastConfig.json') as config_file:
             # Load into JSON object
@@ -259,23 +267,18 @@ def readConfigurationFile():
                 myGlobals.serverName = socket.gethostname()
             else:
                 myGlobals.serverName = jsonObject['serverName']
-                
-            print("Server Name: " + str(myGlobals.serverName))
-        
+                        
             ############
             # Check if PIN Authentication is enabled
             myGlobals.usePINAuthentication = jsonObject['usePINAuthentication']
-            print("PIN Authentication: " + str(myGlobals.usePINAuthentication))
             
             ############
             # Check audio redirection
             myGlobals.allowAudioRedirection = jsonObject['allowAudioRedirection']
-            print("Audio Redirection: " + str(myGlobals.allowAudioRedirection))
 
             ############
             # Grab PSK List
             myGlobals.allowedPskList = jsonObject['allowedPskList']
-            print("Allowed PSK List: " + str(myGlobals.allowedPskList))
             
             ############
             # Load slideshow images into variable, verify if file exists first
@@ -300,7 +303,7 @@ def readConfigurationFile():
                         # Exists, add to config
                         myGlobals.slideshowBackgrounds.append(absolutePath)
                     else:
-                        print("File does not exist, " + str(slideBack))
+                        logStringToFile(("File does not exist, " + str(slideBack)))
                     myGlobals.websiteScreenShotArray.append(None)
                     myGlobals.websiteScreenShotUrlArray.append(None)
                     
@@ -321,7 +324,6 @@ def readConfigurationFile():
             ############
             # Set GUI scale, three options, low, medium, high
             myGlobals.guiScale = jsonObject['connectionScreenScale']
-            print("GUI Scale: " + str(myGlobals.guiScale))
             
             ############
             # Load countDownTime, default 20
@@ -348,13 +350,12 @@ def readConfigurationFile():
             myGlobals.displayDebugStats = jsonObject['displayDebugStats']
                     
     except Exception as e:
-        print("Exception Reading From Config File, Follows: " + str(e))
+        logStringToFile("Exception Reading From Config File, Follows: " + str(e))
         sys.exit()
 
 # While sendBroadcastPacket, send one every two seconds
 def sendBroadcastPacketWhileTrue():
     if myGlobals.sendBroadcastPacket:
-        print("=== Broadcast Thread Started ===")
         # Open udp socket with IPV4 to send broadcast traffic on
         broadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
@@ -389,7 +390,7 @@ async def processHTTPCommand(commandRequest):
     textData = await commandRequest.text()
     thisClientIP = commandRequest.remote
     
-    print("=== Got command: " + str(textData) + " from client " + str(thisClientIP) + " ===")
+    # logStringToFile("Got command: " + str(textData) + " from client " + str(thisClientIP))
            
     # Split data recieved
     splitData = textData.split("|")
@@ -430,10 +431,7 @@ async def processHTTPCommand(commandRequest):
         myGlobals.connectionTimer = time.time()   
             
         # Print official connection information
-        print('=========================================')
-        print(splitData[1] + " is attempting to connect.")
-        print("Client PSK Is " + str(splitData[2]))
-        print('=========================================')
+        logStringToFile(splitData[1] + " is attempting to connect.")
             
         # Set currentConnection to connecting
         myGlobals.currentConnection = 'connecting'
@@ -455,24 +453,15 @@ async def processHTTPCommand(commandRequest):
             if splitData[2] in myGlobals.allowedPskList:
                 # PIN auth not needed, set response string to reflect
                 responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
-                print('=========================================')
-                print("No PIN Required, PSK Found")
-                print('=========================================')
             else:
                 # No PSK found, generate PIN
                 myGlobals.generatedPin = str(random.randint(10000, 99999))
                 responseString = 'response|True|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
-                print('=========================================')
-                print("Connection PIN is: " + myGlobals.generatedPin)
-                print('=========================================')
 
                                     
         else:
             # PIN auth disabled, allow client to connect automatically
             responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
-            print('=========================================')
-            print("PIN Auth disabled")
-            print('=========================================')
                     
         # PIN Check done, return response telling if pin is required
         return web.Response(content_type="text/html", text=responseString)
@@ -490,7 +479,7 @@ async def processHTTPCommand(commandRequest):
                 # PIN was not generated, so client can immediently connect
                 myGlobals.currentConnection = 'connected'
                 # # Start sending screen data
-                print('--- No PIN Generated, Auto-Connecting ---')
+                logStringToFile('No PIN Generated, Allowing Connection')
                 myGlobals.connectedTime = time.time()
                 return web.Response(content_type="text/html", text="response:accepted")
               
@@ -498,12 +487,12 @@ async def processHTTPCommand(commandRequest):
                 # PIN was generated, check if correct
                 if splitData[1] == myGlobals.generatedPin:
                     # PIN Correct
-                    print('--- PIN Accepted, connecting...')
+                    logStringToFile('PIN Accepted, connecting')
                     myGlobals.currentConnection = 'connected'
                     myGlobals.connectedTime = time.time()
                     return web.Response(content_type="text/html", text="response:accepted")
                 else:
-                    print('--- PIN REJECTED')
+                    logStringToFile('PIN Rejected')
                     setInitalValues()
                     return web.Response(content_type="text/html", text="response:rejected")
                         
@@ -618,7 +607,6 @@ def pyGameConstantUpdating():
                 
             # If connected for more then connectionTimeOut seconds and gotSDPResponse is false, set back to open
             if (time.time() - myGlobals.connectedTime > myGlobals.connectionTimeOut) and (myGlobals.gotSDPResponse == False):
-                print("SDP Response is False after 20 seconds, reset!")
                 setInitalValues()
 
         if myGlobals.displayDebugStats == True:
@@ -637,7 +625,6 @@ def pyGameConstantUpdating():
                 
     # Primary Loop, check if myGlobals.sigIntReceived is True
     if myGlobals.sigIntReceived == True:
-        print("SigInt Quit Set, Stopping!")
         
         myGlobals.pyAudioDevice.terminate()
         pygame.quit()
@@ -805,9 +792,6 @@ if __name__ == '__main__':
     cors.add(toggleResource.add_route("POST", toggleCasting))
     
     # Start AioHTTP server on port 4825, wait for connection
-    print("=== Opened HTTP port on 4825 ===")
-    # Empty space
-    print('')
-
-    # Start web app
-    web.run_app(app, host='0.0.0.0', port=4825)    
+    logStringToFile('Server and AioHTTP started')
+    web.run_app(app, host='0.0.0.0', port=4825)
+    

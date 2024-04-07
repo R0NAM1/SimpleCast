@@ -68,6 +68,7 @@ stateSurface = None
 videoSurface = None
 seleniumSurface = None
 resolutionSurface = None
+rtcResolutionSurface = None
 
 # Having this instead of grabbing from an interface forces you to keep it static in some way
 thisServersIpAddress = ""
