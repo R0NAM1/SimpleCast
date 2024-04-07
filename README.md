@@ -9,19 +9,17 @@ For use anywhere that wireless casting akin to a ChromeCast is wanted, but with 
 Not a replacement for an HDMI cable if one can be ran. Depending on hardware ran on it might be able to display 4K, it cannot STREAM 4k,
 has a hard time with 1080p, defaults to 720p for balance between framerate and resolution. 
 
-Try different display resolutions between 720p, 1080p and 4K and see how smooth the slideshow transition is, usually a good gauge.
+Try different display resolutions between 720p, 1080p and 4K and see what the debug FPS is to see what your hardware can handle.
 
-
-Features (will) include:
-- Show a slideshow by default, will be customizable to either show a static image or a screenshot of a webpage, like AP NEWS headlines
+Features include:
+- Showing a slideshow by default, with the option of a screenshot of a webpage
 - Pin Authentication, with a PSK bypass for certain clients
-( For instance, Students have to type in a PIN, while Teachers can auto connect)
+    ( For instance, Students have to type in a PIN, while Teachers can auto connect)
+- PSK clients can kick other clients and toggle castability to the server
 - Optional Audio Redirection
 - Ability to pause casting
-- PSK clients can kick other clients and toggle castability to the server
-- Windows, Mac and Linux clients (Python Script Bundled into Native Execution Format)
-- Individual application window capture if I can find a cross platform library for it
-- Broadcast traffic for passive discovery and mDNS for active discovery
+- Browser based clients (Maybe OS based in the future)
+- Broadcast traffic for passive discovery and mDNS for active discovery (May make broadcast obselete)
 
 
 ## SimpleCast Config Keys & Possible Values
@@ -44,24 +42,7 @@ Features (will) include:
 
 
 ## TODO
-- ✓ Tell client server timeout
-- ✓ Make github page for quick downloads (r0nam1.github.io/simplecast, put into link shortener)
-    https://bit.ly/simplecast-client -> https://r0nam1.github.io/SimpleCast/
-- ✓ TransItion all 'globals' to myGlobals
-- ~✓ Add sigint handling (Work's better, issues with AioHTTP and AioRTC, but on 'open' it works)
-- ✓ Allow PSK to kick connection
-- ✓ Allow PSK to disable/enable casting
-- ✓ Fix image resizing on server
-- ✓ Do info drawing scaling
-- ✓ Allow option to make connecting text 'bit.ly link', 'to connect', or just 'info'.
-- ✓ Website grabbing for slideshow, add thread to do screenshots every 60 seconds
-- ✓ Allow option to flip info and text on screen every 120 seconds for burn in protection
-- ✓ Add debug for server, will show all relevent debug data, time to draw frame, receiver frame, resolution other
-- ✓ Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
-- ✓ Test all edgecases. Should be fine, worst case hotpatch later
-
-Receiver seems to be done, add systemd service and should be finished! Create setup docs as well
-
 - Implement mDNS discovery for browser client
 - Finish Browser Extension Clients, glow up and CSS overhaul
+- README overhaul
   
