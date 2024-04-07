@@ -301,8 +301,8 @@ def drawDebugStats():
 # Draw current connecting client and PIN if found, 
 def drawConnectingInformation():    
     # New font object
-    font = pygame.font.Font(None, round(25 * myGlobals.guiScale))
-    timerFont = pygame.font.Font(None, round(40 * myGlobals.guiScale))
+    font = pygame.font.Font(None, round(40 * myGlobals.guiScale))
+    timerFont = pygame.font.Font(None, round(60 * myGlobals.guiScale))
     fontPin = pygame.font.Font(None, round(210 * myGlobals.guiScale))
     
     
@@ -335,10 +335,10 @@ def drawConnectingInformation():
     timerToDrawText = timerFont.render(timerToDraw, True, (255, 255, 255))
     
     # Blit
-    myGlobals.screenObject.blit(connectionText, (boxX + 10, boxY + 5))
+    myGlobals.screenObject.blit(connectionText, (boxX + 15, boxY + 10))
     
     # Blit timer
-    myGlobals.screenObject.blit(timerToDrawText, ((boxX + boxWidth) - (timerToDrawText.get_width() + 10), boxY + 5))
+    myGlobals.screenObject.blit(timerToDrawText, ((boxX + boxWidth) - (timerToDrawText.get_width() + 15), boxY + 10))
 
     pinString = 'READY'
     

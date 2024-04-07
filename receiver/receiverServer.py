@@ -653,46 +653,62 @@ def seleniumWebsiteScreenShotThread():
         # Need to add user agent or else we get 403's
         options.add_argument("user-agent=Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36")
 
-        # Load extensions, ublock origin for ads and dark reader to make it NOT blinding, make configurable?
+        # Load extensions, ublock origin for ads and dark reader to make it NOT blinding by default
         # Extensions got from github repos and repacked in local browser
-        options.add_extension('./seleniumChromeExtensions/uBlock0.chromium.crx')
-        options.add_extension('./seleniumChromeExtensions/darkreader-chrome-mv3-1.crx')
-
-        driver = webdriver.Chrome(options=options)
-        # Have had issues with window size while headless, needs to be less then current screen resolution, so take away 10, then resize with PIL
-        driver.set_window_size((myGlobals.screenObject.get_width() * 0.80), (myGlobals.screenObject.get_height() * 0.80))
-        
-        for websiteUrl in myGlobals.websiteScreenShotUrlArray:
-            if websiteUrl == None:
-                pass
+        # To load your own extensions, add them as crx files to this folder
+        for extensionFile in os.listdir('./seleniumChromeExtensions/'):
+            fileName = os.fsdecode(extensionFile)
+            # Check if crx file, if so load as extension
+            if ('.crx') in fileName:
+                options.add_extension('./seleniumChromeExtensions/' + fileName)
             else:
-                # Valid url in index, create new driver
-                # print("=== Grabbing screenshot of " + websiteUrl + " ===")
-                driver.get(websiteUrl)
-                # print("== Website Loaded == ")
-                # Do element processing if applicable
-                removeApplicableElements(driver, websiteUrl)
-                
-                # Grab screenshot and convert from png to rgba
-                screenShotPngPillow = Image.open(io.BytesIO(driver.get_screenshot_as_png()))
-                                
-                # Resize
-                screenShotPngPillow = screenShotPngPillow.resize((myGlobals.screenObject.get_width(), myGlobals.screenObject.get_height()))
-                
-                # Convert to RGBA
-                screenShotRGBA = screenShotPngPillow.convert('RGBA')
-                
-                # Store screenshot in memory
-                myGlobals.websiteScreenShotArray[thisIndex] = (screenShotRGBA.tobytes())
-                # print("== Finished ScreenShot Processing ==")
-                
-            thisIndex += 1
-        
-        # Close driver
-        driver.quit()
-        myGlobals.isSeleniumTakingScreenShots = False
-        time.sleep(60)
-        
+                logStringToFile(fileName + " is not a CRX file")
+
+        try:
+            driver = webdriver.Chrome(options=options)
+            # Have had issues with window size while headless, needs to be less then current screen resolution, so take away 10, then resize with PIL
+            driver.set_window_size((myGlobals.screenObject.get_width() * 0.80), (myGlobals.screenObject.get_height() * 0.80))
+            
+            for websiteUrl in myGlobals.websiteScreenShotUrlArray:
+                if websiteUrl == None:
+                    pass
+                else:
+                    # Valid url in index, create new driver
+                    # print("=== Grabbing screenshot of " + websiteUrl + " ===")
+                    driver.get(websiteUrl)
+                    # print("== Website Loaded == ")
+                    # Do element processing if applicable
+                    removeApplicableElements(driver, websiteUrl)
+                    
+                    # Grab screenshot and convert from png to rgba
+                    screenShotPngPillow = Image.open(io.BytesIO(driver.get_screenshot_as_png()))
+                                    
+                    # Resize
+                    screenShotPngPillow = screenShotPngPillow.resize((myGlobals.screenObject.get_width(), myGlobals.screenObject.get_height()))
+                    
+                    # Convert to RGBA
+                    screenShotRGBA = screenShotPngPillow.convert('RGBA')
+                    
+                    # Store screenshot in memory
+                    myGlobals.websiteScreenShotArray[thisIndex] = (screenShotRGBA.tobytes())
+                    # print("== Finished ScreenShot Processing ==")
+                    
+                thisIndex += 1
+            
+            # Close driver
+            driver.quit()
+            myGlobals.isSeleniumTakingScreenShots = False
+            time.sleep(60)
+        except:
+            myGlobals.isSeleniumTakingScreenShots = False
+            
+            try:
+                driver.quit()
+            except:
+                pass
+            
+            time.sleep(10)
+            
 # Init pygame and start drawing thread
 # Does not work on multiple monitors, pygame limitation?
 def pygameInitializeBackgroundWaiting():
