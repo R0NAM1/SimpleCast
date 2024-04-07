@@ -43,9 +43,6 @@ def loadImageOntoSurface(imageUri, thisIndex):
             # Grab image from websiteScreenShotArray
             loadedSurface = pygame.image.frombytes(myGlobals.websiteScreenShotArray[thisIndex], (myGlobals.screenObject.get_width(), myGlobals.screenObject.get_height()), 'RGBA').convert()   
             
-            # Convert surface into correct aspect ratio and resolution
-            loadedSurface = aspectRatioResizeFixedWidth(loadedSurface)
-            
             # Return loaded and scaled surface object
             return loadedSurface
         except Exception as e:
@@ -54,9 +51,6 @@ def loadImageOntoSurface(imageUri, thisIndex):
             # print(e)
             # Load URI into 
             loadedSurface = pygame.image.load('404.png').convert()
-            
-            # Convert surface into correct aspect ratio and resolution
-            loadedSurface = aspectRatioResizeFixedWidth(loadedSurface)
             
             # Return loaded and scaled surface object
             return loadedSurface
@@ -90,7 +84,7 @@ def drawStaticBackground(backgroundImage):
     myGlobals.screenObject.blit(backgroundImage, (0, 0))
     
 # Tick function
-def drawNextSlideShowFrameTick():
+def drawNextSlideShowFrameTick(displayInfo):
     
     # If come in at start, draw initial frame
     # Every tick check if 10 seconds have passed, if so set fade to true
@@ -102,11 +96,32 @@ def drawNextSlideShowFrameTick():
     # if slideshow timer is 'f' is first draw, set myGlobals.slideShowTimer
     if myGlobals.slideShowTimer == 'f':
         # Load first slideshow in array to backgroundSurface
+        
+        myGlobals.newX = 0
+        myGlobals.newX = 0
+        
         myGlobals.backgroundToDraw = loadImageOntoSurface(myGlobals.slideshowBackgrounds[0], 0)
+        
+        # If height is bigger then width, resize by height
+        if (myGlobals.backgroundToDraw.get_height() > myGlobals.backgroundToDraw.get_width()):
+            myGlobals.backgroundToDraw = aspectRatioResizeFixedHeight(myGlobals.backgroundToDraw)
+            # Set originX to be in the middle, displayWidth - FrameWidth = Difference, (Difference / 2)
+            coordDifference = (displayInfo.current_w - myGlobals.backgroundToDraw.get_width())
+            if coordDifference > 0:
+                myGlobals.newX = (coordDifference / 2)
+        
+        # If width is bigger then height, resize by width
+        elif (myGlobals.backgroundToDraw.get_width() > myGlobals.backgroundToDraw.get_height()):
+            myGlobals.backgroundToDraw = aspectRatioResizeFixedWidth(myGlobals.backgroundToDraw)
+            # Set originY to be in the middle, displayHeight - FrameHeight = Difference, (Difference / 2)
+            coordDifference = (displayInfo.current_h - myGlobals.backgroundToDraw.get_height())
+            if coordDifference > 0:
+               myGlobals.newY = (coordDifference / 2)
+        
         
         # Blit onto screen, position is 0, 0, was originally going to be centered, but rule of thirds makes this look better
         # May add slow pan eventually, looks fine as is though
-        myGlobals.screenObject.blit(myGlobals.backgroundToDraw, (0, 0))
+        myGlobals.screenObject.blit(myGlobals.backgroundToDraw, (myGlobals.newX, myGlobals.newY))
         
         # Set myGlobals.slideShowTime inital
         myGlobals.slideShowTimer = time.time()
@@ -118,6 +133,26 @@ def drawNextSlideShowFrameTick():
         # Make current background previous one (Cannot deepcopy, have to makes bytes)
         bkBytes = pygame.image.tobytes(myGlobals.backgroundToDraw, 'RGBA')
         myGlobals.oldBackground = pygame.image.frombytes(bkBytes, (myGlobals.backgroundToDraw.get_width(), myGlobals.backgroundToDraw.get_height()), 'RGBA')
+        
+        myGlobals.oldX = 0
+        myGlobals.oldY = 0
+        
+        # Coord calc for old background
+        # If height is bigger then width, resize by height
+        if (myGlobals.oldBackground.get_height() > myGlobals.oldBackground.get_width()):
+            myGlobals.oldBackground = aspectRatioResizeFixedHeight(myGlobals.oldBackground)
+            # Set originX to be in the middle, displayWidth - FrameWidth = Difference, (Difference / 2)
+            coordDifference = (displayInfo.current_w - myGlobals.oldBackground.get_width())
+            if coordDifference > 0:
+                myGlobals.oldX = (coordDifference / 2)
+        
+        # If width is bigger then height, resize by width
+        elif (myGlobals.oldBackground.get_width() > myGlobals.oldBackground.get_height()):
+            myGlobals.oldBackground = aspectRatioResizeFixedWidth(myGlobals.oldBackground)
+            # Set originY to be in the middle, displayHeight - FrameHeight = Difference, (Difference / 2)
+            coordDifference = (displayInfo.current_h - myGlobals.oldBackground.get_height())
+            if coordDifference > 0:
+                myGlobals.oldY = (coordDifference / 2)
         
         # Set myGlobals.fading to true
         myGlobals.fading = True
@@ -139,11 +174,31 @@ def drawNextSlideShowFrameTick():
             if myGlobals.slideshowIndexTracker >= len(myGlobals.slideshowBackgrounds):
                 myGlobals.slideshowIndexTracker = 0
         
+        myGlobals.newX = 0
+        myGlobals.newY = 0
+        
         # Change background to new one, next in index
         myGlobals.backgroundToDraw = loadImageOntoSurface(myGlobals.slideshowBackgrounds[myGlobals.slideshowIndexTracker], myGlobals.slideshowIndexTracker)
                 
+        # Coord calc for new background
+        # If height is bigger then width, resize by height
+        if (myGlobals.backgroundToDraw.get_height() > myGlobals.backgroundToDraw.get_width()):
+            myGlobals.backgroundToDraw = aspectRatioResizeFixedHeight(myGlobals.backgroundToDraw)
+            # Set originX to be in the middle, displayWidth - FrameWidth = Difference, (Difference / 2)
+            coordDifference = (displayInfo.current_w - myGlobals.backgroundToDraw.get_width())
+            if coordDifference > 0:
+                myGlobals.newX = (coordDifference / 2)
+        
+        # If width is bigger then height, resize by width
+        elif (myGlobals.backgroundToDraw.get_width() > myGlobals.backgroundToDraw.get_height()):
+            myGlobals.backgroundToDraw = aspectRatioResizeFixedWidth(myGlobals.backgroundToDraw)
+            # Set originY to be in the middle, displayHeight - FrameHeight = Difference, (Difference / 2)
+            coordDifference = (displayInfo.current_h - myGlobals.backgroundToDraw.get_height())
+            if coordDifference > 0:
+               myGlobals.newY = (coordDifference / 2)
+                
         # Blit onto screen
-        myGlobals.screenObject.blit(myGlobals.oldBackground, (0, 0))
+        myGlobals.screenObject.blit(myGlobals.oldBackground, (myGlobals.oldX, myGlobals.oldY))
 
     else:
         # Timer must be below time, keep drawing same frame
@@ -163,9 +218,9 @@ def drawNextSlideShowFrameTick():
                 myGlobals.oldBackground.set_alpha(myGlobals.oldBackground.get_alpha() - myGlobals.slideShowAlphaStepDown)
 
             # Draw oldBackground above newBackground
-            myGlobals.screenObject.blit(myGlobals.backgroundToDraw, (0, 0))
-            myGlobals.screenObject.blit(myGlobals.oldBackground, (0, 0))
+            myGlobals.screenObject.blit(myGlobals.backgroundToDraw, (myGlobals.newX, myGlobals.newY))
+            myGlobals.screenObject.blit(myGlobals.oldBackground, (myGlobals.oldX, myGlobals.oldY))
         
         else:
             # If not fading then draw background every frame
-            myGlobals.screenObject.blit(myGlobals.backgroundToDraw, (0, 0))
+            myGlobals.screenObject.blit(myGlobals.backgroundToDraw, (myGlobals.newX, myGlobals.newY))

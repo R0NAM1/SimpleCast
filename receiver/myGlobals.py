@@ -16,6 +16,10 @@ fading = False
 websiteScreenShotArray = []
 websiteScreenShotUrlArray = []
 websiteBackgroundExists = False
+oldX = 0
+oldY = 0
+newX = 0
+newY = 0
 
 # Server Settings
 serverName = 'noNameFoundSomethingIsWrong'

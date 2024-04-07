@@ -60,7 +60,7 @@ Features (will) include:
 - ✓ Logging to file in home directory or local directory: Format ## Month/Day/Year 13:00 (Severity) Action
 - ✓ Test all edgecases. Should be fine, worst case hotpatch later
 
-Receiver seems to be done, add systemd service and should be finished!
+Receiver seems to be done, add systemd service and should be finished! Create setup docs as well
 
 - Implement mDNS discovery for browser client
 - Finish Browser Extension Clients, glow up and CSS overhaul

@@ -530,7 +530,7 @@ def pyGameConstantUpdating():
             setInitalValues()
             
             # Draw slideShowBackground
-            drawNextSlideShowFrameTick()
+            drawNextSlideShowFrameTick(displayInfo)
             
             # Draw Server Information # DO myGlobals.castingToggle == True
             pyGameDrawInformation(font)
@@ -542,7 +542,7 @@ def pyGameConstantUpdating():
             
             
             # Draw slideShowBackground
-            drawNextSlideShowFrameTick()
+            drawNextSlideShowFrameTick(displayInfo)
             
             # Draw information
             pyGameDrawInformation(font)
