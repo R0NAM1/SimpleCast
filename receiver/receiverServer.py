@@ -664,6 +664,8 @@ def seleniumWebsiteScreenShotThread():
             else:
                 logStringToFile(fileName + " is not a CRX file")
 
+        time.sleep(1)
+
         try:
             driver = webdriver.Chrome(options=options)
             # Have had issues with window size while headless, needs to be less then current screen resolution, so take away 10, then resize with PIL
