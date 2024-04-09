@@ -39,10 +39,21 @@ Features include:
 | `infoScreenConnectionText` | What connect text should the 'open' screen show | String | "link" to show bit.ly link, "name" for just the server name, "default" for default text |
 | `infoTextAlignment` | Should the info text on open flip every 120 seconds, or be statically left or right | String | "flip", "left", "right" |
 | `displayDebugStats` | Display debug stats on screen | Boolean | true or false |
+| `doDnsSdDiscovery` | Act as the indexer for all other advertising SimpleCast servers on LAN, must have hostname simplecastdiscovery | Boolean | true or false |
+
+## Auto-Discovery
+    Because you cannot open raw sockets in the browser and no browser has implmented DNS-SD Api's for some forsaken reason, service discovery is a nightmare!
+
+    In order to get this however I've come up with a devious plan, have the option for one of the SimpleCast servers to act as an indexer that gathers all _simplecast._tcp services on the network and gives them to any client that asks, this is only possible because I can still call out to .local addresses, which can only be one address. 
+
+    I've spent days figuring out any other in the browser solution, there is none.
+
+    All you need to do is set `doDnsSdDiscovery` to true and have the hostname of the server be simplecastdiscovery and any client on the subnet should find it fine. 
+
+    Only one SimpleCast server should have this hostname and this option enabled, make it the first one you setup on the subnet.
 
 
 ## TODO
-- Implement mDNS discovery for browser client
-- Finish Browser Extension Clients, glow up and CSS overhaul
 - README overhaul
+- Optional Whitelist
   

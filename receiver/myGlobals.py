@@ -29,6 +29,8 @@ allowedPskList = []
 sendBroadcastPacket = True
 slideshowAlphaStepdown = 5
 infoScreenConnectionText = 'default'
+doDnsSdDiscovery = False
+discoveredMdnsArray = []
 
 
 # Other

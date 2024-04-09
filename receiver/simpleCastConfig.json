@@ -12,6 +12,7 @@
     "doBroadcastDiscovery": false,
     "infoScreenConnectionText": "default",
     "infoTextAlignment": "flip",
-    "displayDebugStats": false
+    "displayDebugStats": false,
+    "doDnsSdDiscovery": false
 }
   

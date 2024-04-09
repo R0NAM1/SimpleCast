@@ -1,26 +1,234 @@
 body {
+    margin: 0;
     background-color: rgb(55, 65, 143);
     color: whitesmoke;
 }
 
+#foundServers {
+    margin: 0;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 150px;
+    border-right: 3px solid whitesmoke;
+    text-align: center;
+}
+
+#logoDiv {
+    padding-bottom: 15px;
+    border-bottom: 3px solid whitesmoke;
+}
+
+#logoText {
+    padding-top: 5px;
+    font-size: 20px;
+}
+
 #logo {
+    margin-top: 15px;
     border: 5px solid black;
+    width: 110px;
 }
 
-#connectText {
+#dns-sd-servers {
+    height: 300px;
+    border-bottom: 3px solid whitesmoke;
+    overflow-y: auto;
+}
+
+#favservers {
+    height: 205px;
+    overflow-y: auto;
+}
+
+.dnsListItem, .favListItem {
+    background-color: #374141;
+    color: #ffffbe;
+    font-size: 12px;
+    text-align: center;
+    padding: 5px;
+    height: 15px;
+    border: 2px solid #242b2b;
+    transition: all 50ms;
+}
+
+.dnsListItem:hover, .favListItem:hover {
+    background-color: #607474;
+}
+
+#addListItem {
+    background-color: #374141;
+    color: #ffffbe;
+    font-size: 12px;
+    text-align: center;
+    padding: 5px;
+    height: 15px;
+    border: 2px solid #242b2b;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+}
+
+.serverName {
+    /* border: 2px solid #df0d0d; */
+    height: auto;
+    width: auto;
+    display: inline-block;
+    transform: translateY(-1px);
+    cursor: pointer;
+    user-select: none;
+    transition: all 50ms;
+
+}
+
+.serverName:hover {
+    color: lightblue;
+}
+
+.favServer, .addServer {
+    margin-right: 1px;
+    /* border: 2px solid #02f3f3; */
+    height: 20px;
+    width: auto;
+    float: right;
+    display: inline-block;
+    transform: translateY(-3px);
+    user-select: none;
+    cursor: pointer;
+
+}
+
+#rightBody {
     position: absolute;
-    top: 20px;
-    left: 115px;
+    display: inline-block;
+    right: 0;
+    top: 0;
+    width: 747px;
+    height: 100vh;
 }
 
-#centeredElements {
+#enterNameGhost, #addServerGhost {
+    text-align: center;
+    margin-top: 40vh;
+    display: none;
+}
+
+#enterNameText, #enterNameBox, #enterNameButton, #egText {
+    margin: 5px;
+}
+
+#selectServerDiv {
+    margin-top: 35vh;
+    font-size: 25px;
+}
+
+#latestStatusText {
     position: absolute;
-    top: 130px;
-    left: 100px;
+    bottom: 20px;  
+    margin-left: auto; 
+    margin-right: auto; 
+    width: 544px;
 }
 
-#interactableGhost {
-    opacity: 50%;
-    pointer-events: none;
+#mainControlPanelGhost {
+    width: auto;
+    height: 100vh;
 }
 
+#leftPanel {
+    display: inline-block;
+    text-align: center;
+    height: 100vh;
+    width: 544px;
+}
+
+#addServerGhost {
+    display: none;
+    text-align: center;
+    height: 100vh;
+    width: 544px; 
+    margin-top: 0;
+}
+
+#rightAdminPanel {
+    position: absolute;
+    display: inline-block;
+    background-color: rgb(49, 58, 126);
+    border-left: 3px solid whitesmoke;
+    width: 200px;
+    height: 100vh;
+    right: 0;
+    text-align: center;
+}
+
+#hostnameShowoff {
+    transform: translateY(5vh);
+    padding-top: 5px;
+    border-top: 3px solid whitesmoke;
+}
+
+#hostDisplayElement, #hostDisplayTop {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#pskDisplayElement {
+    transform: translateY(10px);
+}
+
+#adminHeaderText {
+    margin-top: 10px;
+    padding-bottom: 10px;
+    font-size: 25px;
+    border-bottom: 3px solid whitesmoke;
+    width: auto;
+}
+
+#clientHeaderText {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    font-size: 25px;
+    border-bottom: 3px solid whitesmoke;
+    border-top: 3px solid whitesmoke;
+    width: auto;
+}
+
+#toggleCastText, #kickText, #pauseClient, #stopText {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#kickButton, #stopButton {
+    margin-bottom: 10px;
+}
+
+
+#PSKShowoff {
+    width: auto;
+    border-top: 3px solid whitesmoke;
+    transform: translateY(6vh);
+}
+
+
+#addServerHeader {
+    margin-top: 30vh;
+    padding-bottom: 10px;
+    font-size: 25px;
+    width: auto;
+}
+
+#addServerNameBox, #addServerIPBox {
+    margin-bottom: 10px;
+}
+
+#pinText {
+margin-top: 15vh;
+}
+
+#cannotText, #youareconnected {
+    margin-top: 35vh;
+}
+
+#capText, #timeoutDiv {
+    margin-top: 5vh;
+}

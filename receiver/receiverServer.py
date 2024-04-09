@@ -1,4 +1,4 @@
-import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors, signal, io
+import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors, signal, io, ipaddress
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from threading import Thread, active_count
@@ -9,6 +9,7 @@ from aiortc.rtcrtpsender import RTCRtpSender
 from aiohttp import web
 from datetime import datetime
 from PIL import Image
+from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
 
 # SimpleCast specific imports
 from slideshowObjects import drawBlackCatchBackground, drawStaticBackground, drawNextSlideShowFrameTick, aspectRatioResizeFixedHeight, aspectRatioResizeFixedWidth
@@ -16,6 +17,35 @@ from drawGuiObjects import drawConnectingInformation, pyGameDrawInformation, dra
 from seleniumRemoveElements import removeApplicableElements
 import myGlobals
 
+class MyListener(ServiceListener):
+    
+    def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+        # Ignore service updates
+        pass
+
+    def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+        info = zc.get_service_info(type_, name)
+        for inadd in info.addresses:
+            numIp = str(ipaddress.ip_address(inadd))
+             # Ignore 127.0.0.1
+            if numIp == '127.0.0.1':
+                pass
+            else:
+                myGlobals.discoveredMdnsArray.remove(numIp)
+
+    # If a service if found, add IP to discoveredMdnsArray
+    
+    def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+        info = zc.get_service_info(type_, name)
+        for inadd in info.addresses:
+            numIp = str(ipaddress.ip_address(inadd))
+            # Ignore 127.0.0.1
+            if numIp == '127.0.0.1':
+                pass
+            else:
+                myGlobals.discoveredMdnsArray.append(numIp)
+            
+        
 
 def logStringToFile(stringToWrite):
     # We can always open with a, it will create the file if it does not exist
@@ -40,6 +70,18 @@ def sigint_handler(signum ,frame):
     
     myGlobals.sigIntReceived = True
     sys.exit(0)
+    
+# If GET, return 
+async def respondDiscover(commandRequest):
+    textData = await commandRequest.text()
+    thisClientIP = commandRequest.remote
+    
+    # Array of IP Addresses
+    toSendArray = json.dumps(myGlobals.discoveredMdnsArray)
+
+    return web.Response(content_type="text/html", status=200, text=toSendArray)
+
+
 
 # If valid PSK, attempt to stop current globalPcObject and call setInitialValues
 async def kickCurrentConnection(commandRequest):
@@ -348,6 +390,10 @@ def readConfigurationFile():
              ############
             # Load displayDebugStats
             myGlobals.displayDebugStats = jsonObject['displayDebugStats']
+                    
+             ############
+            # Load doDnsSdDiscovery
+            myGlobals.doDnsSdDiscovery = jsonObject['doDnsSdDiscovery']
                     
     except Exception as e:
         logStringToFile("Exception Reading From Config File, Follows: " + str(e))
@@ -756,7 +802,18 @@ def setInitalValues():
 def pyAudioInit():
     if myGlobals.allowAudioRedirection == True:
         myGlobals.pyAudioDevice = pyaudio.PyAudio()
-    
+        
+# mDNS Discovery Thread
+def dnsSdThread():
+    # Do Dns SD Things
+    zeroconf = Zeroconf()
+    listener = MyListener()
+    browser = ServiceBrowser(zeroconf, "_simplecast._tcp.local.", listener)
+        
+    while myGlobals.sigIntReceived == False:
+        time.sleep(60)
+    # Loop stopped, close zeroconf 
+    zeroconf.close() 
         
 # Program start
 if __name__ == '__main__':
@@ -808,6 +865,14 @@ if __name__ == '__main__':
     # Add route for toggling ability to cast
     toggleResource = cors.add(app.router.add_resource("/toggle"))
     cors.add(toggleResource.add_route("POST", toggleCasting))
+    
+    # If myGlobals.doDnsSdDiscovery is true, add route for returning mdns and add thread to do discovery?
+    if myGlobals.doDnsSdDiscovery == True:
+        dnsSdThreadOb = Thread(target=dnsSdThread)
+        dnsSdThreadOb.start()
+    
+        dnsSdResource = cors.add(app.router.add_resource("/discover"))
+        cors.add(dnsSdResource.add_route("GET", respondDiscover))
     
     # Start AioHTTP server on port 4825, wait for connection
     logStringToFile('Server and AioHTTP started')

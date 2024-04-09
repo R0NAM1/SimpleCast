@@ -12,67 +12,159 @@
 
         <body>
 
-            <img id="logo" src="logo-pallete.png" width="80px">
+            <div id="foundServers">
+                <div id="logoDiv">
 
-            <div id="requiredNameDiv">
+                    <img id="logo" src="logo-pallete.png">
+
+                    <div id="logoText">
+                        SimpleCast
+                    </div>
+
+                </div>
+
+                <div id="dns-sd-servers">
+
+                </div>
+
+                <div id="favservers">
+
+                    <div id="addListItem">
+
+                            <div class="serverName">
+                                Add New Server
+                            </div>
+                            
+                            <img class="addServer" src="plus.png">
+
+                    </div> 
+
+                    </div>
+                </div>
 
             </div>
-        
-            <div id="blockIfNoHostname">
 
-                <h4 id="connectText">Connect To SimpleCast Server: </h4>
+            
+            <div id="rightBody">
 
-                <div id="centeredElements">
+                <div id="enterNameGhost">
 
-                    <div id="initalInfo">
-                    
-                        <input id="serverIdText" type="text" placeholder="192.168.0.100"> <br>
-                        
-                        <button id="addServerButton">Connect to Server</button> <br>
-
-                        <br>
-
-                        <h4>Admin Actions:</h4>
-
-                        <button id="kickButton">Kick Current Connection</button> <br>
-
-                        <button id="toggleCastButton">Toggle Casting</button> <br>
+                    <div id="enterNameText">
+                        Please enter a unique Nickname to present to SimpleCast Servers
                     </div>
-        
-                    
-                    <div id="pinConnectingGhost">
 
-                        <div id="pinRequiredGhost">
-                            <h4>PIN If Required:</h4>
-                            <input id="pinText" type="text" placeholder="12345"> <br>
+                    <div id="egText">
+                        (Eg, John Doe)
+                    </div>
+
+                    <div id="enterNameBox">
+                        <input id="enterNameTextBox" type="text" placeholder="John Doe">
+                    </div>
+
+                    <button id="enterNameButton">Confirm Nickname</button>
+
+                </div>
+
+                
+                <div id="mainControlPanelGhost">
+                    
+                    <div id="addServerGhost">
+                        
+                        <div id="addServerHeader">
+                            Add a server:
+                        </div>
+
+                        <div id="addServerNameText">
+                            Server Name:
+                        </div>
+
+                        <input id="addServerNameBox" type="text" placeholder="Conference Room 1">
+
+                        <div id="addServerIPText">
+                            IP Address:
+                        </div>
+
+                        <input id="addServerIPBox" type="text" placeholder="10.0.0.50"> <br>
+
+                        <button id="addServerButton">Add Server</button>
+
+                    </div>
+
+                    <div id="leftPanel">
+                        
+                        <div id="selectServerDiv">
+                            Select a server from the browser <br>
+                            or add one manually
+                        </div>
+
+                        <div id="latestStatusText">
+                            Status: <br>
+                            Not connected
+                        </div>
+
+                    </div>
+
+
+                    <div id="rightAdminPanel">
+
+                        <div id="adminHeaderText">
+                            Admin <br>
+                            Controls
+                        </div>
+
+                        <div id="adminGhost">
+
+                            <div id="toggleCastText">
+                                Toggle Casting
+                            </div>
+
+                            <button id="toggleCastButton">Toggle Casting</button>
+
+                            <div id="kickText">
+                                Kick Client
+                            </div>
+
+                            <button id="kickButton">Kick Current Connection</button>
+
+
+                        </div>
+
+                        <div id="clientHeaderText">
+                            Client <br>
+                            Controls
+                        </div>
+
+                        <div id="clientGhost">
+
+                            <div id="pauseClient">
+                                Pause Casting
+                            </div>
+
+                            <button id="pauseButton">Pause Casting</button>
+
+                            <div id="stopText">
+                                Stop Casting
+                            </div>
+
+                            <button id="stopButton">Stop Casting</button>
+
+
                         </div>
                         
-                        <button id="pinSubmitButton">Submit PIN</button> <br>
+                        <div id="hostnameShowoff">
+                            <h4 id="hostDisplayTop">Hostname:</h4>
+                            <h4 id="hostDisplayElement">None</h4>
+                        </div>
 
-                    </div>
-                    
-                    <div id="interactableGhost">
-                        <h4>Controls:</h4>
-                        <button id="pauseButton">Pause Casting</button> <br>
-                        <button id="stopButton">Stop Casting</button> <br>
-
-                    </div>
-
-                        <h4>Settings:</h4>
+                        <div id="PSKShowoff">
+                            <h4 id="pskDisplayElement">PSK: None</h4>
+                            <button id="copyPSKButton">Copy PSK To Clipboard</button>
+                        </div>
                         
-                        <h4>Capture Resolution:</h4>
-                        <select name="Resolution" id="resolutionOptions">
-                            <option value="1920x1080">1920x1080</option>
-                            <option value="1280x720">1280x720</option>
-                            <option value="640x480">640x480</option>
-                        </select>
+                    </div>
 
-
-                    
-                    <h4 id="pskDisplayElement">PSK: None</h4>
-                    <button id="copyPSKButton">Copy PSK</button>
                 </div>
-            
+
             </div>
         
         </body>

@@ -14,8 +14,8 @@ chrome.action.onClicked.addListener(() => {
       chrome.windows.create({
         url: chrome.runtime.getURL("client.html"),
         type: "popup",
-        width: 400, // Desired width
-        height: 850, // Desired height
+       width: 900, // Desired width
+        height: 700, // Desired height
       }).then(window => {
         extensionWindowId = window.id; // Store the new window ID
       });

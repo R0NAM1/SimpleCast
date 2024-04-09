@@ -1,6 +1,7 @@
 // import * as browser from './node_modules/webextension-polyfill/dist/browser-polyfill.js';
 // var browser = require("./node_modules/webextension-polyfill/dist/browser-polyfill.js")
 
+var discoveredServerArray = [];
 var serverAudioAllowed = false;
 var sendClientAudio = true;
 var pinAuthRequired = false;
@@ -10,34 +11,92 @@ var pc = null;
 var mediaStream;
 var generatedPSK = 'none';
 var uniqueHostname = 'none';
+var doesNicknameExist = false;
+var currentConnectionIP = '';
+var currentConnectionStatus = '';
+var currentConnectionTimeout = 0;
+
+// false display, true user
+var userMediaOrDisplay = false;
+
+// I need to implement dns sd discovery myself, cannot find client only library, plus not sure if I can open udp as an extension -_-
 
 // PSK string generator
 function generatePSKRandomString(length = 8) {
     return Math.random().toString(16).substr(2, length);
 }
 
-async function startWebRTCMirroring(serverIP) {
+// Wait 300 ms to let array catchup
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+async function updateTimeoutWhileAboveZero() {
+    await sleep(300)
+
+    currentConnectionTimeout = currentConnectionTimeout - 2;
+
+    try {
+
+        while (currentConnectionTimeout > 0) {
+            var updateTimeDiv = document.getElementById('timeoutChange');
+            await sleep(1000);
+
+            // Set -1
+            currentConnectionTimeout = currentConnectionTimeout - 1;
+
+            // Set element
+            updateTimeDiv.innerText = currentConnectionTimeout
+        }
+
+        console.log("Timer at 0")
+        stopCasting()
+
+    }
+    catch (error) {
+        // Element must not exist, stop all
+        console.log("Timer not exist")
+        console.log(error)
+    }
+}
+
+async function startWebRTCMirroring() {
 
     console.log("Starting WebRTC")
 
     var config = {
         sdpSemantics: 'unified-plan', // Modern SDP format.
-        iceServers: [{"urls": "stun:" + serverIP}] //This will be dynamic based on server config later
+        iceServers: [{"urls": "stun:" + currentConnectionIP}] //This will be dynamic based on server config later
     };
 
     pc = new RTCPeerConnection(config); // Set server to config
-    console.log("Generating getDisplayMedia")
-    // Grab MediaStream
-    mediaStream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-            cursor: "always",
-            width: { ideal: requestedWidth, max: requestedWidth },
-            height: { ideal: requestedHeight, max: requestedHeight }
-        },
-        audio: true, // Set to true if you want to capture audio as well
-        surfaceSwitching: "include", // Allow user to switch displayMedia source
-        systemAudio: "include" // Capture system audio, not individual tab audio
-    });
+    
+    if (userMediaOrDisplay == false) {
+        console.log("Generating getDisplayMedia")
+        // Grab MediaStream
+        setStatusText("Grabbing getDisplayMedia")
+        mediaStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+                cursor: "always",
+                width: { ideal: requestedWidth, max: requestedWidth },
+                height: { ideal: requestedHeight, max: requestedHeight }
+            },
+            audio: true, // Set to true if you want to capture audio as well
+            surfaceSwitching: "include", // Allow user to switch displayMedia source
+            systemAudio: "include" // Capture system audio, not individual tab audio
+        });
+    }
+    else {
+        console.log("Generating getUserMedia")
+        // Grab MediaStream, do userMedia eventually?
+        setStatusText("Grabbing getUserMedia")
+
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true // Set to true if you want to capture audio as well
+        });
+    }
 
 
     // Attempt to set Codec to use, valid options are VP8, RTX (ReTransmittion) H264 "profile-level-id=42e00d;level-asymmetry-allowed=1;packetization-mode=1" }
@@ -79,7 +138,7 @@ async function startWebRTCMirroring(serverIP) {
         }
     }
 
-    var serverIdTextURL = 'http://' + serverIP + ':4825/sdpOffer'
+    var serverIdTextURL = 'http://' + currentConnectionIP + ':4825/sdpOffer'
 
     // Time to negotiate with server
     return pc.createOffer({iceRestart:true}).then(function(offer) {
@@ -133,25 +192,41 @@ async function startWebRTCMirroring(serverIP) {
         console.log(answer)
         var sess = new RTCSessionDescription({sdp: answer, type: 'answer'}) // Set the response to our answer.
         pc.setRemoteDescription(sess);   //Finally, set the remote peers description.
+        
+        setStatusText("Connection Active")
+        
+        // Connection is finished, make connection
+    
+        var allRemove = document.getElementsByClassName('doRemove');
+    
+        while (allRemove[0]) {
+            allRemove[0].remove()
+        }
+
+        var connectedText = document.createElement('div');
+        connectedText.innerHTML = 'You are <br> connected!';
+        connectedText.id = 'youareconnected'
+
+        var surDiv = document.getElementById('selectServerDiv');
+        surDiv.appendChild(connectedText);
     })
+
+
+
 }
-
-
-
 
 function attemptConnectionWithPIN() {
     // Send HTTP request to server and wait for response,
     // Get serverIdText
-    var serverIdText = document.getElementById('serverIdText').value;
-    var serverIdTextURL = 'http://' + serverIdText + ':4825/command'
+    var serverIdTextURL = 'http://' + currentConnectionIP + ':4825/command'
 
-    var PINValue = document.getElementById('pinText').value;
-
+    
     // Define connection data
-    if (PINValue == '') {
+    if (pinAuthRequired == "False") {
         var postString = ("command:connect|" + "000000")
     }
     else {
+        var PINValue = document.getElementById('pinBox').value;
         var postString = ("command:connect|" + PINValue)
     }
 
@@ -173,34 +248,47 @@ function attemptConnectionWithPIN() {
         // Check if accepted or rejected
         if (responseData.includes('response:accepted')) {
             console.log("Connection Accepted! Starting WebRTC")
-            startWebRTCMirroring(serverIdText)
+            setStatusText("Connection Accepted, Starting WebRTC")
+            startWebRTCMirroring()
         }
         else {
             console.log("REJECTED")
+            setStatusText("Connection Refused")
             stopCasting()
         }
 
     })
 }
 
-function showConnectionPanel() {
+function stopCasting() {
+    try {
+        // Reset JS applet and stop rtc peer
+        pc.close()
 
-    var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
-    pinConnectingGhostElement.style.opacity = '100%';
-    pinConnectingGhostElement.style.pointerEvents = 'all';
+        // Close mediaStream tracks
+        for (var msTrack of mediaStream.getTracks()) {
+            msTrack.stop()
+        }
+    }
+    catch (error) {
+        console.log(error)
+    }
+    // Reset CSS DIV Elements
 
-    // Change CSS options for interactableGhost to show correctly
-    var interactableGhostDiv = document.getElementById('interactableGhost');
-    interactableGhostDiv.style.opacity = '100%';
-    interactableGhostDiv.style.pointerEvents = 'all';
+    setStatusText("Stopped Casting")
+
+    console.log("Reseting DIV Elements")
+
+    var mainDiv = document.getElementById('selectServerDiv');
+    mainDiv.innerHTML = " Select a server from the browser <br> or add one manually"
+    mainDiv.style.marginTop = '35vh';
+
 }
 
 function connectToServer() {
 
     // Send HTTP request to server and wait for response,
-    // Get serverIdText
-    var serverIdText = document.getElementById('serverIdText').value;
-    var serverIdTextURL = 'http://' + serverIdText + ':4825/command'
+    var serverIdTextURL = 'http://' + currentConnectionIP + ':4825/command'
 
     // Define connection data
     var postString = ("command:attemptConnection|" + uniqueHostname + "|" + generatedPSK)
@@ -225,29 +313,7 @@ function connectToServer() {
             // 1 pin, 2 audio
             pinAuthRequired = responseDataSplit[1];
             serverAudioAllowed = responseDataSplit[2];
-
-            // Modify Ghost data
-            if (pinAuthRequired == "False") {
-                var pinRequiredGhostElement = document.getElementById('pinRequiredGhost');
-                pinRequiredGhostElement.style.opacity = '50%';
-                pinRequiredGhostElement.style.pointerEvents = 'none';
-
-                var pinSubmitButtonElement = document.getElementById('pinSubmitButton');
-                pinSubmitButtonElement.innerHTML = 'Connect To Server'
-
-                var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
-                pinConnectingGhostElement.style.opacity = '100%';
-                pinConnectingGhostElement.style.pointerEvents = 'all';
-            }
-
-            if (serverAudioAllowed == "False") {
-                var audioAllowedGhostElement = document.getElementById('audioAllowedGhost');
-                audioAllowedGhostElement.style.opacity = '50%';
-                audioAllowedGhostElement.style.pointerEvents = 'none';
-            }
-
-
-            showConnectionPanel()
+            currentConnectionTimeout = responseDataSplit[3];
         }
 
     })
@@ -255,8 +321,7 @@ function connectToServer() {
 
 function sendPauseCommandToServer(pauseButtonElement) {
 
-    var serverIdText = document.getElementById('serverIdText').value;
-    var serverIdTextURL = 'http://' + serverIdText + ':4825/command'
+    var serverIdTextURL = 'http://' + currentConnectionIP + ':4825/command'
 
     // Define connection data
     var postString = ("command:pause|")
@@ -277,19 +342,23 @@ function sendPauseCommandToServer(pauseButtonElement) {
         
         // Toggle Button Text
         if (responseData.includes('response:unpaused')) {
+            setStatusText("Casting Resumed")
             pauseButtonElement.innerHTML = 'Pause Casting'
         }
         else if (responseData.includes('response:paused')) {
+            setStatusText("Casting Paused")
             pauseButtonElement.innerHTML = 'Resume Casting'
+        }
+        else if (responseData.includes('response:notAuthorized')) {
+            setStatusText("Pausing Not Authorized")
         }
 
     })
 }
 
-function sendKickCommandToServer(kickButtonElement) {
+function sendKickCommandToServer() {
 
-    var serverIdText = document.getElementById('serverIdText').value;
-    var serverIdTextURL = 'http://' + serverIdText + ':4825/kick'
+    var serverIdTextURL = 'http://' + currentConnectionIP + ':4825/kick'
 
     // Define connection data
     var postString = ("command:kick|") + generatedPSK
@@ -306,22 +375,22 @@ function sendKickCommandToServer(kickButtonElement) {
         return response.text();
     }).then(function(responseData) {
 
-        console.log("Got response: " + responseData)
         
-        // Toggle Button Text
-        // if (responseData.includes('response:clientKicked')) {
-        // }
-        // else if (responseData.includes('response:paused')) {
-        //     pauseButtonElement.innerHTML = 'Resume Casting'
-        // }
-
+        if (responseData == 'response:notConnected') {
+            setStatusText("No Connection To Kick")
+        }
+        else if (responseData == 'response:clientKicked') {
+            setStatusText("Connected Client Kicked")
+        }
+        else if (responseData == 'response:notAuthorized') {
+            setStatusText("Not authorized to kick client")
+        }
     })
 }
 
-function sendToggleCommandToServer(toggleButtonElement) {
+function sendToggleCommandToServer() {
 
-    var serverIdText = document.getElementById('serverIdText').value;
-    var serverIdTextURL = 'http://' + serverIdText + ':4825/toggle'
+    var serverIdTextURL = 'http://' + currentConnectionIP + ':4825/toggle'
 
     // Define connection data
     var postString = ("command:toggleCast|") + generatedPSK
@@ -338,51 +407,62 @@ function sendToggleCommandToServer(toggleButtonElement) {
         return response.text();
     }).then(function(responseData) {
 
-        console.log("Got response: " + responseData)
+        if (responseData == 'response:enabledCasting') {
+            setStatusText("Casting Enabled")
+        }
+        else if (responseData == 'response:disabledCasting') {
+            setStatusText("Casting Disabled")
+        }
+        else if (responseData == 'response:notAuthorized') {
+            setStatusText("Not authorized to toggle casting")
+        }
 
     })
 }
 
-function stopCasting() {
-    try {
-        // Reset JS applet and stop rtc peer
-        pc.close()
+function waitToGetHostname() {
+    // No hostname was found, show elements and register event listener
 
-        // Close mediaStream tracks
-        for (var msTrack of mediaStream.getTracks()) {
-            msTrack.stop()
+    // Switch elements
+    var hostnameGhost = document.getElementById('enterNameGhost');
+    hostnameGhost.style.display = 'block';
+
+    var mcGhost = document.getElementById('mainControlPanelGhost');
+    mcGhost.style.display = 'none';
+    
+
+    var submitButton = document.getElementById('enterNameButton');
+
+    submitButton.addEventListener('click', function() {
+        
+        // If text in box exists, store
+        var hostnameBox = document.getElementById('enterNameTextBox');
+
+        if (hostnameBox.value == '') {
+            // Do nothing
+            console.log("Is empty")
         }
-    }
-    catch (error) {
-        console.log(error)
-    }
-    // Reset CSS DIV Elements
+        else {
+            window.localStorage.setItem("hostname", hostnameBox.value)
 
-    console.log("Reseting DIV Elements")
+            // Switch elements
+            var hostnameGhost = document.getElementById('enterNameGhost');
+            hostnameGhost.style.display = 'none';
+            
+            var mcGhost = document.getElementById('mainControlPanelGhost');
+            mcGhost.style.display = 'block';
 
-    var pinRequiredGhostElement = document.getElementById('pinRequiredGhost');
-    pinRequiredGhostElement.style.opacity = '100%';
-    pinRequiredGhostElement.style.pointerEvents = 'all';
+            // Set div
+            var hostText = document.getElementById('hostDisplayElement');
+            hostText.innerText = hostnameBox.value
+        }
 
-    var pinSubmitButtonElement = document.getElementById('pinSubmitButton');
-    pinSubmitButton.innerHTML = 'Submit PIN'
-
-    // Main ghost 
-    var interactableGhostElement = document.getElementById('interactableGhost');
-    interactableGhostElement.style.opacity = '50%';
-    interactableGhostElement.style.pointerEvents = 'none';
-
-    // Reset PIN
-    var pinTextElement = document.getElementById('pinText');
-    pinTextElement.value = '';
-
-    var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
-    pinConnectingGhostElement.style.opacity = '50%';
-    pinConnectingGhostElement.style.pointerEvents = 'none';
+    });
 
 }
 
 function loadStorageVariables() {
+    console.log("Loading Variables From Local Storage")
     // Attempt to load PSK, undefined if not set
 
     // Load PSK
@@ -391,14 +471,15 @@ function loadStorageVariables() {
     // If undefined, set
     if (pskStorageBit == undefined) {
         // Does not exist, generate
-        console.log("Generating PSK")
-        generatedPSK = generatePSKRandomString(12)
+        console.log("No PSK found, generating...");
+        generatedPSK = generatePSKRandomString(12);
+        console.log("Generated PSK is " + generatedPSK);
 
         window.localStorage.setItem("generatedPSK", generatedPSK)
     } 
     else {
         // Was found, set
-        console.log("Setting PSK")
+        console.log("PSK Found: " + pskStorageBit)
         generatedPSK = pskStorageBit
     }
 
@@ -412,85 +493,638 @@ function loadStorageVariables() {
 
     // If undefined, set
     if (hostnameStorageBit == undefined) {
-        // Does not exist, ghost elements and show hostname submission
-
-        var ghostDiv = document.getElementById('blockIfNoHostname');
-        ghostDiv.style.opacity = '0%';
-        ghostDiv.style.pointerEvents = 'none';
-
-        var requiredNameDivElement = document.getElementById('requiredNameDiv');
-
-        // Append Text, Button and Input
-        var textElement = document.createElement('h5');
-        textElement.textContent = "Please give a name for server identification"
-        requiredNameDivElement.appendChild(textElement);
-
-        // Input
-        var inputElement = document.createElement('input');
-        inputElement.type = 'text';
-        inputElement.placeholder = 'John Doe';
-        inputElement.id = 'inputHostnameID';
-        requiredNameDivElement.appendChild(inputElement);
-
-        // Button
-        var buttonElement = document.createElement('button');
-        buttonElement.textContent = 'Submit Name'
-        buttonElement.id = 'inputButtonID'
-        requiredNameDivElement.appendChild(buttonElement);
-
-        var buttonElementID = document.getElementById('inputButtonID');
-
-
-        // Add event listener for buttonElement
-
-        buttonElementID.addEventListener('click', function() {
-            // Get input element and set base on that
-            var textElementID = document.getElementById('inputHostnameID');
-
-            if (textElementID.value == '') {
-                console.log("No Text")
-            }
-            else {
-                window.localStorage.setItem("hostname", textElementID.value)
-
-                uniqueHostname = textElementID.value;
-                
-                // Reset
-                requiredNameDivElement.innerHTML = '';
-                ghostDiv.style.opacity = '100%';
-                ghostDiv.style.pointerEvents = 'all';
-            }
-            
-        });
-
+        console.log("No hostname found, waiting for user submission")
+        doesNicknameExist = false;
+        waitToGetHostname();
     } 
     else {
         // Load
-        
+        console.log("Hostname found: " + hostnameStorageBit)
         uniqueHostname = hostnameStorageBit
+
+        // Set div
+        var hostText = document.getElementById('hostDisplayElement');
+        hostText.innerText = uniqueHostname
     }
 
-    var pinConnectingGhostElement = document.getElementById('pinConnectingGhost');
-    pinConnectingGhostElement.style.opacity = '50%';
-    pinConnectingGhostElement.style.pointerEvents = 'none';
+    // Check if any servers are favrioted, if undefined init empty array
+    var storageFavroiteServers = window.localStorage.getItem("favServer");
+    
+    if (storageFavroiteServers == undefined) {
+        window.localStorage.setItem("favServer", JSON.stringify([]))
+    }
 
-    console.log("Hostname: " + uniqueHostname)
+}
+
+function setStatusText(text) {
+    var statusElement = document.getElementById('latestStatusText');
+
+    statusElement.innerHTML = 'Status: <br> ' + text
+}
+
+
+async function reloadDnsList() {
+
+
+    await sleep(300)
+    // Remove all dnsListItem, clears list
+
+    var toRemoveItems = document.getElementsByClassName('dnsListItem');
+
+    while (toRemoveItems[0]) {
+        toRemoveItems[0].remove();
+    }
+
+    var topD = document.getElementById('dns-sd-servers');
+    topD.innerHTML = ''
+
+    var favServerArray = JSON.parse(window.localStorage.getItem("favServer"));
+    
+    for (let itemArray of discoveredServerArray) {
+
+        var dnsItemDiv = document.createElement('div');
+        dnsItemDiv.className = 'dnsListItem';
+        
+        // Item 1 - 
+        var serverNameDiv = document.createElement('div');
+        serverNameDiv.className = 'serverName';
+        serverNameDiv.innerText = itemArray[1];
+        
+        // Add event listener for selecting 
+        serverNameDiv.addEventListener('click', function() {
+            loadServerToMain(itemArray[1]);
+        })
+
+        dnsItemDiv.appendChild(serverNameDiv);
+        
+        // Item 2 -
+        var favServerImage = document.createElement('img');
+        favServerImage.className = 'favServer';
+
+        // Check if itemArray exists in favStorage, if so do filled in
+        var isFavr = false;
+        for (var iA of favServerArray) {
+
+            var checkArray = [itemArray[1], itemArray[0]];
+            if (JSON.stringify(iA) == JSON.stringify(checkArray)) {
+                isFavr = true
+            }
+        }
+
+        if (isFavr == true){
+            favServerImage.src = 'star-filled.png';
+        }
+        else {
+            favServerImage.src = 'star-outline.png';
+        }
+
+        // Add event listener for star to add to storage
+
+        favServerImage.addEventListener('click', function() {
+            
+            // If already favroited, remove,
+            // else add
+
+            var isFav = false
+            // Check, [Name, IP]
+            
+
+            // Remove itemArray from storage
+            for (var iA of favServerArray) {
+
+                var checkArray = [itemArray[1], itemArray[0]];
+                if (JSON.stringify(iA) == JSON.stringify(checkArray)) {
+                    isFav = true
+                }
+            }
+
+            // if false, add to favServer
+            if (isFav == false){
+
+                var checkArray = [itemArray[1], itemArray[0]];
+                favServerArray.push(checkArray);
+
+                window.localStorage.setItem("favServer", JSON.stringify(favServerArray))
+
+            }
+            else {
+                // Is True, remove
+
+                var newArray = []
+                // Remove itemArray from storage
+                for (var iA of favServerArray) {
+                    console.log(iA)
+                    console.log(itemArray) // redo
+    
+                    var checkArray = [itemArray[1], itemArray[0]];
+                    if (JSON.stringify(iA) == JSON.stringify(checkArray)) {
+                        //pass
+                    }
+                    else {
+                        newArray.push(iA);
+                    }
+                } 
+
+                window.localStorage.setItem("favServer", JSON.stringify(newArray))
+
+            }
+
+            // Reload lists
+            reloadDnsList()
+            reloadFavList()
+
+        })
+        
+        dnsItemDiv.appendChild(favServerImage);
+
+        // Add
+        var topDiv = document.getElementById('dns-sd-servers');
+
+        topDiv.appendChild(dnsItemDiv);
+        
+    }
+}
+
+function getServerList() {
+    
+    // Attempt to fetch http://simplecastdiscovery.local:4825/discover
+    // console.log("Gathering DNS-SD")
+    
+    fetch("http://simplecastdiscovery.local:4825/discover", {
+        method: 'GET',
+        mode: 'cors'
+    }).then(function(response) {
+        return response.text();
+    }).then(function(responseData) {
+
+        // console.log("Got response: ")
+        responseData = JSON.parse(responseData)
+        // console.log(responseData)
+
+        // Reset discoveredServerArray
+        discoveredServerArray = []
+
+        for (var serverItem of responseData) {
+
+            try {
+
+                // Attempt to get status of a server, if cannot don't add
+                fetch("http://" + serverItem + ":4825/command", {
+                    method: 'POST',
+                    mode: 'cors',
+                    body: 
+                    "command:statusProbe",
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                }).then(function(response) {
+                    return response.text();
+                }).then(function(responseData) {
+                    
+                    responseData = responseData.split('|');                    
+                    // Got valid response, add to discoveredServerArray
+                    var tempServerArray = [serverItem, responseData[0], responseData[1]]
+                    // console.log("Adding to global: " + tempServerArray)
+
+                    discoveredServerArray.push(tempServerArray);
+                })
+            
+            }
+            catch {
+                // Do Nothing
+            }
+        }
+
+        // Done gathering servers, reloadDnsList()
+        reloadDnsList()
+    }).catch(function(error) {
+        // Cannot reach, set
+        console.log(error)
+        var topD = document.getElementById('dns-sd-servers');
+        topD.innerHTML = 'Cannot <br> reach <br> DNS-SD <br> server'
+
+    });
+}
+
+
+function reloadFavList() {
+    // Remove all favListItem, clears list
+
+    var toRemoveItems = document.getElementsByClassName('favListItem');
+
+    while (toRemoveItems[0]) {
+        toRemoveItems[0].remove();
+    }
+    
+
+    // Grab array
+    var storageFavroiteServers = JSON.parse(window.localStorage.getItem("favServer"));
+
+    for (let itemArray of storageFavroiteServers) {
+   
+        var favItemDiv = document.createElement('div');
+        favItemDiv.className = 'favListItem';
+        
+        // Item 1 - 
+        var serverNameDiv = document.createElement('div');
+        serverNameDiv.className = 'serverName';
+        serverNameDiv.innerText = itemArray[0];
+
+        // Add event listener for selecting 
+        serverNameDiv.addEventListener('click', function() {
+            loadServerToMain(itemArray[0], itemArray[1]);
+        })
+        
+        favItemDiv.appendChild(serverNameDiv);
+        
+        // Item 2 -
+        var favServerImage = document.createElement('img');
+        favServerImage.className = 'favServer';
+        favServerImage.src = 'star-filled.png';
+
+        // Add event listener for star to remove from storage
+
+        favServerImage.addEventListener('click', function() {
+            var newArray = []
+            // Remove itemArray from storage
+            console.log("Remove: " + itemArray[0])
+            for (var iA of storageFavroiteServers) {
+                if (JSON.stringify(iA) == JSON.stringify(itemArray)) {
+
+                }
+                else {
+                    newArray.push(iA);
+                }
+            }
+
+            // Load into storage
+            window.localStorage.setItem("favServer", JSON.stringify(newArray))
+
+            reloadFavList();
+            reloadDnsList();
+        })
+        
+        favItemDiv.appendChild(favServerImage);
+
+        // Add
+        var topDiv = document.getElementById('favservers');
+
+        topDiv.appendChild(favItemDiv);
+        
+    }
+}
+
+function addServerMain() {
+
+    // Hide mainControlPanelGhost and show addServerGhost
+
+    var addGhost = document.getElementById('addServerGhost');
+    addGhost.style.display = 'inline-block';
+
+    var mcGhost = document.getElementById('leftPanel');
+    mcGhost.style.display = 'none';
+
+    // Add event listener for elements
+
+    var addServerButtonElement = document.getElementById('addServerButton');
+
+    addServerButtonElement.addEventListener('click', function() {
+        
+        // Add new server to local storage if does not exist,
+        // favServer is [["server1", "10.0.0.1"], ["server2", "10.0.0.2"]]
+        // Load array
+        var storageFavroiteServers = JSON.parse(window.localStorage.getItem("favServer"));
+
+        // Load text
+        var serverName = (document.getElementById('addServerNameBox')).value;
+
+        var serverIp = (document.getElementById('addServerIPBox')).value;
+
+        
+        
+        if (serverName == '' || serverIp == '' ) {
+            console.log("No text in boxes")
+        }
+        else {
+            // Clear
+            (document.getElementById('addServerNameBox')).value = '';
+            (document.getElementById('addServerIPBox')).value = '';
+
+            // Create array
+            var tempArray = [serverName, serverIp];
+            var doesExist = false
+
+                // Check if already exists, itterate over array
+                for (var serverItem of storageFavroiteServers) {
+                    if (JSON.stringify(tempArray) == JSON.stringify(serverItem)) {
+                        doesExist = true;
+                    }
+                }
+
+                if (doesExist == true) {
+                    console.log("Server exists, do not add")
+                    setStatusText("Already Exists, Cannot Add")
+                    // Already exists, do not add
+                    // Reset divs 
+                    var addGhost = document.getElementById('addServerGhost');
+                    addGhost.style.display = 'none';
+                    
+                    var mcGhost = document.getElementById('leftPanel');
+                    mcGhost.style.display = 'inline-block'
+                }
+                else {
+                    console.log("Server does not exists, add")
+                    setStatusText("Added Manual Server")
+                    // Push
+                    storageFavroiteServers.push(tempArray);
+                    
+                    // Reload into storage
+                    window.localStorage.setItem("favServer", JSON.stringify(storageFavroiteServers))
+                    
+                    // Reset divs 
+                    var addGhost = document.getElementById('addServerGhost');
+                    addGhost.style.display = 'none';
+                    
+                    var mcGhost = document.getElementById('leftPanel');
+                    mcGhost.style.display = 'inline-block';
+
+                    reloadFavList()
+                }
+        
+        }
+
+    });
+}
+
+async function loadServerToMain(serverName, serverIp = undefined) {
+
+    console.log(serverName)
+
+    var selectServerDivElement = document.getElementById('selectServerDiv');
+    selectServerDivElement.innerHTML = '';
+    selectServerDivElement.style.marginTop = '5vh';
+
+    // Get IP, STATUS and make global
+
+    if (serverIp != undefined) {
+        fetch("http://" + serverIp + ":4825/command", {
+                    method: 'POST',
+                    mode: 'cors',
+                    body: 
+                    "command:statusProbe",
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                }).then(function(response) {
+                    return response.text();
+                }).then(function(responseData) {
+                    
+                    responseData = responseData.split('|');                    
+                    // Got valid response, add to discoveredServerArray
+                    var tempServerArray = [serverIp, responseData[0], responseData[1]]
+                    // console.log("Adding to global: " + tempServerArray)
+
+                    discoveredServerArray.push(tempServerArray);
+                })
+    }
+
+    for (var itemServer of discoveredServerArray) {
+        // ip, name, status
+        if (itemServer[1] == serverName) {
+            currentConnectionIP = itemServer[0];
+            currentConnectionStatus = itemServer[2];
+        }
+    }
+  
+    // Create label
+    var serverLabel = document.createElement('div');
+    serverLabel.id = 'serverNameHeader';
+    serverLabel.innerText = serverName;
+
+    selectServerDivElement.appendChild(serverLabel);
+
+    // Check server status, if not open, let know
+
+    if (currentConnectionStatus == 'open') {
+
+        // Server is open!
+        // Attempt to connect and start webrtc
+
+        connectToServer();
+        
+        await sleep(500)
+
+        console.log(pinAuthRequired)
+
+        // Depending on if pin auth, show certain elements
+        if (pinAuthRequired == "True") {
+            // Create pin text, input, button
+            var pinText = document.createElement('div');
+            pinText.innerText = '--Input PIN on screen--'
+            pinText.id = 'pinText';
+            pinText.className = 'doRemove';
+
+            selectServerDivElement.appendChild(pinText);
+
+            var pinBox = document.createElement('input');
+            pinBox.type = 'text';
+            pinBox.id = 'pinBox';
+            pinBox.placeholder = '12345';
+            pinBox.className = 'doRemove';
+
+            selectServerDivElement.appendChild(pinBox);
+
+            var pinButton = document.createElement('button');
+            pinButton.textContent = 'Submit PIN';
+            pinButton.id = 'pinButton';
+            pinButton.className = 'doRemove';
+
+
+            // Add event listener 
+
+            selectServerDivElement.appendChild(document.createElement('br'));
+            selectServerDivElement.appendChild(pinButton);
+
+
+            pinButton.addEventListener('click', function() {
+                attemptConnectionWithPIN()
+            });
+
+
+        }
+        else {
+
+            // Create pin text, input, button
+            var conText = document.createElement('div');
+            conText.innerText = '--Connect when ready--'
+            conText.id = 'pinText';
+            conText.className = 'doRemove';
+
+            selectServerDivElement.appendChild(conText);
+
+            var conButton = document.createElement('button');
+            conButton.textContent = 'Connect To Server';
+            conButton.id = 'pinButton';
+            conButton.className = 'doRemove';
+
+            // Add event listener 
+
+            selectServerDivElement.appendChild(document.createElement('br'));
+            selectServerDivElement.appendChild(conButton);
+
+
+            conButton.addEventListener('click', function() {
+                attemptConnectionWithPIN()
+            });
+        }
+
+        
+        // media Select
+        
+        var mediaText = document.createElement('div');
+        mediaText.className = 'doRemove';
+        mediaText.innerText = 'Capture Source';
+        mediaText.id = "capText";
+
+        selectServerDivElement.appendChild(mediaText);
+
+        var mediaSelect = document.createElement('select');
+        mediaSelect.className = 'doRemove';
+        mediaSelect.id = "mediaOptions";
+        
+        // options
+        var option1 = document.createElement('option');
+        option1.value = 'Display';
+        option1.innerText = 'Display';
+        
+        var option2 = document.createElement('option');
+        option2.value = 'Camera';
+        option2.innerText = 'Camera';
+        
+        mediaSelect.appendChild(option1);
+        mediaSelect.appendChild(option2);
+        
+        selectServerDivElement.appendChild(mediaSelect);
+        
+        
+        // Add select event listener
+        mediaSelect.addEventListener('change', function() {
+            // Change global values depending on selection
+            if (mediaSelect.value == 'Display') {
+                userMediaOrDisplay = false
+            }
+            else if (mediaSelect.value == 'Camera') {
+                userMediaOrDisplay = true
+                
+            }
+        });
+        
+        // Res select
+        
+        // Add resolution control and audio?
+        var capResText = document.createElement('div');
+        capResText.className = 'doRemove';
+        capResText.innerText = 'Capture Resolution';
+        capResText.id = "capText";
+
+        selectServerDivElement.appendChild(capResText);
+        
+        var capResSelect = document.createElement('select');
+        capResSelect.className = 'doRemove';
+        capResSelect.id = "resolutionOptions";
+
+        // options
+        var option1 = document.createElement('option');
+        option1.value = '1920x1080';
+        option1.innerText = '1920x1080';
+
+        var option2 = document.createElement('option');
+        option2.value = '1280x720';
+        option2.innerText = '1280x720';
+
+        var option3 = document.createElement('option');
+        option3.value = '640x480';
+        option3.innerText = '640x480';
+
+        capResSelect.appendChild(option1);
+        capResSelect.appendChild(option2);
+        capResSelect.appendChild(option3);
+
+        // Add select event listener
+        capResSelect.addEventListener('change', function() {
+            // Change global values depending on selection
+            if (capResSelect.value == '1920x1080') {
+                requestedWidth = 1920
+                requestedHeight = 1080
+            }
+            else if (capResSelect.value == '1280x720') {
+                requestedWidth = 1280
+                requestedHeight = 720
+            }
+            else if (capResSelect.value == '640x480') {
+                requestedWidth = 640
+                requestedHeight = 480
+            }
+        });
+    
+        // Set default to 720
+        capResSelect.value = '1280x720';
+
+        selectServerDivElement.appendChild(capResSelect);
+
+        // Append timer
+        var timeoutDiv = document.createElement('div');
+        timeoutDiv.className = 'doRemove';
+        var timeoutDivText = document.createElement('div');
+        var timeoutDivNum = document.createElement('div');
+
+        timeoutDiv.id = 'timeoutDiv'
+
+        timeoutDivText.innerHTML = 'Timeout:'
+
+        timeoutDiv.appendChild(timeoutDivText);
+
+        timeoutDivNum.id = 'timeoutChange';
+        
+        timeoutDiv.appendChild(timeoutDivNum);
+
+        selectServerDivElement.append(timeoutDiv);
+
+        setStatusText("Connecting to server")
+
+        updateTimeoutWhileAboveZero()        
+    }
+    else {
+        var cannotText = document.createElement('div');
+        cannotText.innerHTML = '--Server not open-- <br> --Cannot connect--'
+        cannotText.id = 'cannotText';
+        setStatusText("Connection Refused")
+
+        selectServerDivElement.appendChild(cannotText);
+    }
+
 }
 
 function addEventListenersForAll() {
+    
+    // Load storage variables
+    loadStorageVariables()
 
     // Button Listeners
-
-    var connectToServerButton = document.getElementById('addServerButton');
-
-    connectToServerButton.addEventListener('click', function() {
-        connectToServer()
+    // PSK Listener
+    var copyPSKButtonElement = document.getElementById('copyPSKButton');
+    copyPSKButtonElement.addEventListener('click', function() {
+        // Put into clipboard 
+        setStatusText("Copied PSK")
+        navigator.clipboard.writeText(generatedPSK)
     });
 
-    var pinEntryButton = document.getElementById('pinSubmitButton');
+    // Listen for manual add server button 
 
-    pinEntryButton.addEventListener('click', function() {
-        attemptConnectionWithPIN()
+    var addServerManButton = document.getElementById('addListItem');
+
+    addServerManButton.addEventListener('click', function() {
+        addServerMain()
     });
 
     var pauseButtonElement = document.getElementById('pauseButton');
@@ -508,7 +1142,7 @@ function addEventListenersForAll() {
     var kickButtonElement = document.getElementById('kickButton');
 
     kickButtonElement.addEventListener('click', function() {
-        sendKickCommandToServer(kickButtonElement)
+        sendKickCommandToServer()
     });
 
 
@@ -518,53 +1152,19 @@ function addEventListenersForAll() {
         sendToggleCommandToServer(toggleCastButtonElement)
     });
 
-    
-    // Resolution select listener
-    var resolutionOptionsElement = document.getElementById('resolutionOptions');
 
-    resolutionOptionsElement.addEventListener('change', function() {
-        // Change global values depending on selection
-        if (resolutionOptionsElement.value == '1920x1080') {
-            requestedWidth = 1920
-            requestedHeight = 1080
-        }
-        else if (resolutionOptionsElement.value == '1280x720') {
-            requestedWidth = 1280
-            requestedHeight = 720
-        }
-        else if (resolutionOptionsElement.value == '640x480') {
-            requestedWidth = 640
-            requestedHeight = 480
-        }
-    });
 
-    // Set default to 720
-    resolutionOptionsElement.value = '1280x720';
+    reloadFavList()
 
-    // Audio Checkbox listener
-    // var audioCheckboxElement = document.getElementById('audioCheckbox');
+    // Set interval for getServerList, do immediently
+    getServerList();
 
-    // audioCheckboxElement.addEventListener('change', function() {
-    //     // Change global values depending on selection
-    //     if (audioCheckboxElement == false) {
-    //         sendClientAudio = false;
-    //     }
-    //     else if (audioCheckboxElement === true) {
-    //         sendClientAudio = true;
-    //     }
-    // });
-
-    // PSK Listener
-    var copyPSKButtonElement = document.getElementById('copyPSKButton');
-    copyPSKButtonElement.addEventListener('click', function() {
-        // Put into clipboard 
-        navigator.clipboard.writeText(generatedPSK)
-    });
-
-    // Load storage variables
-    loadStorageVariables()
+    setInterval(getServerList, (10 * 1000))
 
     console.log("SimpleCast Loaded, Event Listeners Registered")
+    setStatusText("Client Loaded")
 }
+
+
 
 window.onload = addEventListenersForAll()

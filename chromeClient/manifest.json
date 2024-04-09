@@ -1,9 +1,9 @@
 {
     "manifest_version": 3,
     "name": "SimpleCast Client",
-    "version": "1.0",
+    "version": "1.1",
   
-    "description": "HTTP and WebRTC compliant Chrome extension for SimpleCast servers.",
+    "description": "HTTP and WebRTC compliant Chrome extension for SimpleCast servers.  https://github.com/R0NAM1/SimpleCast",
   
     "icons": {
       "48": "logo-pallete-48.png",
