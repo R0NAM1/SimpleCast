@@ -35,7 +35,7 @@ Imagined for use on a Le Potato board, along with case and fan for cooling and l
 | `usePINAuthentication` | Force PIN authentication or allow anybody to connect at anytime from anywhere | Boolean | true or false |
 | `allowAudioRedirection` | Allow clients to cast audio to the server | Boolean | true or false |
 | `allowedPskList` | List of client PSK's that have authority over the server, usually assigned Teachers or equivilent | String array | ["psk1", "psk2"] |
-| `slideshowPictures` | List of pictures in backgrounds folder to display, can also be a URL with http locator (Eventually) | String array | ["0.jpg", "1.jpg"] |
+| `slideshowPictures` | List of pictures in backgrounds folder to display, can also be a URL with http locator | String array | ["0.jpg", "1.jpg"] |
 | `serverIP` | The IP Address of the primary interface the server uses, forces you to make it static or static lease | String | "10.42.255.249" |
 | `shuffleSlideshow` | Either show background slides in sequencial order, or randomly shuffle | Boolean | true or false |
 | `connectionScreenScale` | The size of information drawn on the 'open' screen | Float | "low: 0.5", "meduim: 1" or "high: 1.5" or anything else |
