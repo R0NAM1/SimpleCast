@@ -15,6 +15,7 @@ var doesNicknameExist = false;
 var currentConnectionIP = '';
 var currentConnectionStatus = '';
 var currentConnectionTimeout = 0;
+var webRtcActive = false
 
 // false display, true user
 var userMediaOrDisplay = false;
@@ -50,8 +51,10 @@ async function updateTimeoutWhileAboveZero() {
             updateTimeDiv.innerText = currentConnectionTimeout
         }
 
-        console.log("Timer at 0")
-        stopCasting()
+        if (webRtcActive == false) {
+            console.log("Timer at 0")
+            stopCasting()
+        }
 
     }
     catch (error) {
@@ -64,6 +67,7 @@ async function updateTimeoutWhileAboveZero() {
 async function startWebRTCMirroring() {
 
     console.log("Starting WebRTC")
+    webRtcActive = true
 
     var config = {
         sdpSemantics: 'unified-plan', // Modern SDP format.
@@ -261,6 +265,7 @@ function attemptConnectionWithPIN() {
 }
 
 function stopCasting() {
+    webRtcActive = false
     try {
         // Reset JS applet and stop rtc peer
         pc.close()
@@ -858,8 +863,8 @@ function addServerMain() {
 
 async function loadServerToMain(serverName, serverIp = undefined) {
 
-    console.log(serverName)
-    console.log(serverIp)
+    // console.log(serverName)
+    // console.log(serverIp)
 
     var selectServerDivElement = document.getElementById('selectServerDiv');
     selectServerDivElement.innerHTML = '';
@@ -881,7 +886,7 @@ async function loadServerToMain(serverName, serverIp = undefined) {
                 }).then(function(responseData) {
                     responseData = responseData.split('|');                    
                     // Got valid response, add to discoveredServerArray
-                    var tempServerArray = [serverIp, responseData[0], responseData[1]]
+                    var tempServerArray = [serverIp, serverName, responseData[1]]
                     // console.log("Adding to global: " + tempServerArray)
 
                     discoveredServerArray.push(tempServerArray);
@@ -935,6 +940,9 @@ async function loadServerToMain(serverName, serverIp = undefined) {
             pinBox.className = 'doRemove';
 
             selectServerDivElement.appendChild(pinBox);
+
+            pinBox.focus();
+            pinBox.select();
 
             var pinButton = document.createElement('button');
             pinButton.textContent = 'Submit PIN';
