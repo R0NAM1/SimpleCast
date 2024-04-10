@@ -1,4 +1,4 @@
-How to setup the SimpleCast receiver script.
+How to setup the SimpleCast receiver service.
 
 1. Clone the GIT repo from github to your user running X's home directory (On Raspi this would be /home/pi)
     -- git clone https://github.com/R0NAM1/SimpleCast.git
@@ -12,6 +12,7 @@ How to setup the SimpleCast receiver script.
     Exit the venv with 'deactivate'.
 
 3. Setup receiver/simpleCastConfig.json however you like, make sure to assign either a static IP or a static leased one!
+    -- If this is the first server in a LAN deployment, make the hostname 'simplecastdiscovery' and enable doDnsSdDiscovery for Auto Discovery in clients.
 
 4. Setup avahi to respond to simplecast.local
     -- Copy the provided simplecast-mdns.service to /etc/avahi/services/
