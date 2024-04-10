@@ -2,13 +2,14 @@
 Description=SimpleCast Service
 After=network.target
 StartLimitIntervalSec=0
+Requires=coturn.service
 
 [Service]
 Environment="DISPLAY=:0"
 Type=simple
 Restart=always
 RestartSec=1
-WorkingDirectory=/home/pi/SimpleCast
+WorkingDirectory=/home/pi/SimpleCast/receiver
 User=pi
 ExecStart=/home/pi/SimpleCast/venv/bin/python3 /home/pi/SimpleCast/receiver/receiverServer.py
 KillSignal=SIGKILL
