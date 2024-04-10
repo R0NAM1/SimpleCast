@@ -24,7 +24,8 @@ Features include:
 - Logging to local file, simplecast.log
 - Broadcast traffic for passive discovery and mDNS for active discovery (May make broadcast obselete)
 
-It can run on a Raspberry Pi or a Le Potato, but it runs much better on even the worst amd64 systems.
+It can run on a Raspberry Pi or a Le Potato, but it runs much better on even the worst amd64 systems. I got around 20 fps on a Raspi 3B+ at 1024x768.
+
 Selenium may also not run well with extensions, so remove them as first step for troubleshooting.
 
 <img src="assets/server_link.png" alt="The open screen of the simplecast server, had the download link and the background is a tropical beach" width="800"/>
