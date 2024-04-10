@@ -669,7 +669,7 @@ function getServerList() {
         // Reset discoveredServerArray
         discoveredServerArray = []
 
-        for (var serverItem of responseData) {
+        for (let serverItem of responseData) {
 
             try {
 
