@@ -387,11 +387,19 @@ def readConfigurationFile():
             # Load infoTextAlignment
             myGlobals.infoTextAlignment = jsonObject['infoTextAlignment']
 
-             ############
+            ############
+            # Load enableWhitelist
+            myGlobals.enableWhitelist = jsonObject['enableWhitelist']
+            
+            ############
+            # Load whitelistArray
+            myGlobals.whitelistArray = jsonObject['whitelistArray']
+            
+            ############
             # Load displayDebugStats
             myGlobals.displayDebugStats = jsonObject['displayDebugStats']
                     
-             ############
+            ############
             # Load doDnsSdDiscovery
             myGlobals.doDnsSdDiscovery = jsonObject['doDnsSdDiscovery']
                     
@@ -478,13 +486,6 @@ async def processHTTPCommand(commandRequest):
             
         # Print official connection information
         logStringToFile(splitData[1] + " is attempting to connect.")
-            
-        # Set currentConnection to connecting
-        myGlobals.currentConnection = 'connecting'
-        myGlobals.clientIP = thisClientIP
-        
-        # Set hostname
-        myGlobals.clientHostname = splitData[1]
                             
         # Repond to the client telling it what we can do
         # pinIfRequired|audioRedirection
@@ -492,23 +493,58 @@ async def processHTTPCommand(commandRequest):
         # Init empty response string                   
         responseString = ''
             
-        # If PIN auth is enabled, process PSK to see if we need to use it
-        if myGlobals.usePINAuthentication == True:
-           
-            # Check if PSK is in allowedList
-            if splitData[2] in myGlobals.allowedPskList:
+        # Check if whitelist is enabled, if so overtake process
+        
+        if myGlobals.enableWhitelist == True:
+            # Check if PSK is in whitelistArray
+            if splitData[2] in myGlobals.whitelistArray:
                 # PIN auth not needed, set response string to reflect
+                
+                # Set currentConnection to connecting
+                myGlobals.currentConnection = 'connecting'
+                myGlobals.clientIP = thisClientIP
+                myGlobals.clientHostname = splitData[1]
+                
                 responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
-            else:
-                # No PSK found, generate PIN
-                myGlobals.generatedPin = str(random.randint(10000, 99999))
-                responseString = 'response|True|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
-
-                                    
+                
+        
         else:
-            # PIN auth disabled, allow client to connect automatically
-            responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
+                
+            # If PIN auth is enabled, process PSK to see if we need to use it
+            if myGlobals.usePINAuthentication == True:
+            
+                # Check if PSK is in allowedList
+                if splitData[2] in myGlobals.allowedPskList:
+                    # PIN auth not needed, set response string to reflect
                     
+                    # Set currentConnection to connecting
+                    myGlobals.currentConnection = 'connecting'
+                    myGlobals.clientIP = thisClientIP
+                    myGlobals.clientHostname = splitData[1]
+                    
+                    responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
+                else:
+                    # No PSK found, generate PIN
+                    
+                    # Set currentConnection to connecting
+                    myGlobals.currentConnection = 'connecting'
+                    myGlobals.clientIP = thisClientIP
+                    myGlobals.clientHostname = splitData[1]
+            
+                    myGlobals.generatedPin = str(random.randint(10000, 99999))
+                    responseString = 'response|True|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
+
+                                        
+            else:
+                # PIN auth disabled, allow client to connect automatically
+                
+                # Set currentConnection to connecting
+                myGlobals.currentConnection = 'connecting'
+                myGlobals.clientIP = thisClientIP
+                myGlobals.clientHostname = splitData[1]
+                
+                responseString = 'response|False|' + str(myGlobals.allowAudioRedirection) + "|" + str(myGlobals.connectionTimeOut)
+                        
         # PIN Check done, return response telling if pin is required
         return web.Response(content_type="text/html", text=responseString)
                             

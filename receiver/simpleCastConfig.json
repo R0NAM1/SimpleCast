@@ -12,6 +12,8 @@
     "doBroadcastDiscovery": false,
     "infoScreenConnectionText": "default",
     "infoTextAlignment": "flip",
+    "whitelistArray": ["psk1", "psk2"],
+    "enableWhitelist": false,
     "displayDebugStats": false,
     "doDnsSdDiscovery": false
 }

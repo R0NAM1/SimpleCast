@@ -31,7 +31,8 @@ slideshowAlphaStepdown = 5
 infoScreenConnectionText = 'default'
 doDnsSdDiscovery = False
 discoveredMdnsArray = []
-
+whitelistArray = []
+enableWhitelist = False
 
 # Other
 connectionTimer = 0

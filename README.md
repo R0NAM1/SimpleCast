@@ -38,6 +38,8 @@ Features include:
 | `doBroadcastDiscovery` | Enable or disable subnet broadcast traffic to advertise server | Boolean | true or false |
 | `infoScreenConnectionText` | What connect text should the 'open' screen show | String | "link" to show bit.ly link, "name" for just the server name, "default" for default text |
 | `infoTextAlignment` | Should the info text on open flip every 120 seconds, or be statically left or right | String | "flip", "left", "right" |
+| `whitelistArray` | PSK's to whitelist | String array | "psk1", "psk2" |
+| `enableWhitelist` | Should the PSK whitelist be enabled? Ignores PIN Auth setting | Boolean | true of false |
 | `displayDebugStats` | Display debug stats on screen | Boolean | true or false |
 | `doDnsSdDiscovery` | Act as the indexer for all other advertising SimpleCast servers on LAN, must have hostname simplecastdiscovery | Boolean | true or false |
 
@@ -54,6 +56,6 @@ Features include:
 
 
 ## TODO
-- README overhaul
 - Optional Whitelist
+- README overhaul
   
