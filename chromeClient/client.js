@@ -93,7 +93,7 @@ async function startWebRTCMirroring() {
         setStatusText("Grabbing getUserMedia")
 
         mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
+            video: { width: requestedWidth, height: requestedHeight },
             audio: true // Set to true if you want to capture audio as well
         });
     }
@@ -701,7 +701,7 @@ function getServerList() {
         // Cannot reach, set
         console.log(error)
         var topD = document.getElementById('dns-sd-servers');
-        topD.innerHTML = 'Cannot <br> reach <br> DNS-SD <br> server'
+        topD.innerHTML = 'Cannot <br> reach <br> DNS-SD <br> service'
 
     });
 }
@@ -859,6 +859,7 @@ function addServerMain() {
 async function loadServerToMain(serverName, serverIp = undefined) {
 
     console.log(serverName)
+    console.log(serverIp)
 
     var selectServerDivElement = document.getElementById('selectServerDiv');
     selectServerDivElement.innerHTML = '';
@@ -878,7 +879,6 @@ async function loadServerToMain(serverName, serverIp = undefined) {
                 }).then(function(response) {
                     return response.text();
                 }).then(function(responseData) {
-                    
                     responseData = responseData.split('|');                    
                     // Got valid response, add to discoveredServerArray
                     var tempServerArray = [serverIp, responseData[0], responseData[1]]
@@ -887,6 +887,8 @@ async function loadServerToMain(serverName, serverIp = undefined) {
                     discoveredServerArray.push(tempServerArray);
                 })
     }
+
+    await sleep(300)
 
     for (var itemServer of discoveredServerArray) {
         // ip, name, status
