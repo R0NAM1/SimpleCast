@@ -3,7 +3,7 @@
 Client Downloads:
 https://r0nam1.github.io/SimpleCast/
 
-SimpleCast is an AioRTC based software that takes any video and audio frames and sends them over the network via the WebRTC standard to 'cast' to another display. Completely complient with WebRTC and HTTP standards, so implementing a custom client is easy, along with automation. 
+SimpleCast is an AioRTC based software that takes any video and audio frames and sends them over the network via the WebRTC standard to 'cast' to another display. Completely complient with WebRTC and HTTP standards and easy to manage, so implementing a custom client is easy, along with automation. 
 It runs on any Debian flavored distro.
 
 For use anywhere that wireless casting akin to a ChromeCast is wanted, but with more management and the ability to do pin authentication and other like-features.
@@ -71,8 +71,4 @@ Only one SimpleCast server should have this hostname and this option enabled, ma
 <img src="assets/client_connected.png" alt="The connected screen of the simplecast client, saying 'You are connected'" width="800"/>
 
 <img src="assets/server_debug_rickroll.png" alt="The connected screen of the simplecast server, shoiwng debug info, you just got rick rolled" width="800"/>
-
-## TODO
-- Client unfav shows 3 copies
-- Client reject
   
