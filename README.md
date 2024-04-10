@@ -72,3 +72,4 @@ Only one SimpleCast server should have this hostname and this option enabled, ma
 
 <img src="assets/server_debug_rickroll.png" alt="The connected screen of the simplecast server, shoiwng debug info, you just got rick rolled" width="800"/>
   
+All images belong to the respective copyright holders, they are used for demonstration purposes in this README and are not included directly in this repo, the image links for them are included under receiver/backgrounds for easy download to use in your own enviroment.
