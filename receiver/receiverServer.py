@@ -73,8 +73,10 @@ def sigint_handler(signum ,frame):
     
 # If GET, return 
 async def respondDiscover(commandRequest):
-    textData = await commandRequest.text()
+    # textData = await commandRequest.text()
     thisClientIP = commandRequest.remote
+    
+    # print("GET DNS-SD from: " + str(thisClientIP))
     
     # Array of IP Addresses
     toSendArray = json.dumps(myGlobals.discoveredMdnsArray)
@@ -735,6 +737,8 @@ def seleniumWebsiteScreenShotThread():
         # Need to add user agent or else we get 403's
         options.add_argument("user-agent=Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36")
 
+        service = webdriver.ChromeService(executable_path='/usr/bin/chromedriver')
+        
         # Load extensions, ublock origin for ads and dark reader to make it NOT blinding by default
         # Extensions got from github repos and repacked in local browser
         # To load your own extensions, add them as crx files to this folder
@@ -749,7 +753,7 @@ def seleniumWebsiteScreenShotThread():
         time.sleep(1)
 
         try:
-            driver = webdriver.Chrome(options=options)
+            driver = webdriver.Chrome(service=service, options=options)
             # Have had issues with window size while headless, needs to be less then current screen resolution, so take away 10, then resize with PIL
             driver.set_window_size((myGlobals.screenObject.get_width() * 0.80), (myGlobals.screenObject.get_height() * 0.80))
             
@@ -783,9 +787,11 @@ def seleniumWebsiteScreenShotThread():
             driver.quit()
             myGlobals.isSeleniumTakingScreenShots = False
             time.sleep(60)
-        except:
+        except Exception as e:
             myGlobals.isSeleniumTakingScreenShots = False
-            
+                      
+            print(e)
+                        
             try:
                 driver.quit()
             except:
@@ -807,7 +813,7 @@ def pygameInitializeBackgroundWaiting():
     pygame.display.set_caption("SimpleCast Receiver | " + str(myGlobals.serverName))
     
     # Set display mode
-    myGlobals.screenObject = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    myGlobals.screenObject = pygame.display.set_mode((0, 0), pygame.FULLSCREEN, vsync=1)
     
     # Get display info
     displayInfo = pygame.display.Info() 
@@ -815,9 +821,8 @@ def pygameInitializeBackgroundWaiting():
     # Make cursor invisible
     pygame.mouse.set_visible(False)
     
-    # Start seperate thread to update screen depending on connectionStatus
-    pyGameUpdateThread = Thread(target=pyGameConstantUpdating)
-    pyGameUpdateThread.start()
+    # Move onto main thread forever loop        
+    pyGameConstantUpdating()
         
 # Set initial connection values, meant to reset program to a starting state where nobody is connected. 
 def setInitalValues():
@@ -849,31 +854,10 @@ def dnsSdThread():
     while myGlobals.sigIntReceived == False:
         time.sleep(60)
     # Loop stopped, close zeroconf 
-    zeroconf.close() 
-        
-# Program start
-if __name__ == '__main__':
-    # Register Sigint handler
-    signal.signal(signal.SIGINT, sigint_handler)
-    signal.signal(signal.SIGTERM, sigint_handler)
+    zeroconf.close()
     
-    # Read configuration data into memory
-    readConfigurationFile()
-    
-    # Attempt to init audio
-    pyAudioInit()
-    
-    # Initialize vars
-    setInitalValues()
-    
-    # Initialize PyGame with Frame Update Thread
-    pygameInitializeBackgroundWaiting()
-    
-    # Start seperate thread for broadcast packets
-    broadcastThread = Thread(target=sendBroadcastPacketWhileTrue)
-    broadcastThread.start()
-    
-    # Init AioHTTP Webapp
+async def runHTTP():
+     # Init AioHTTP Webapp
     app = web.Application()
     
     # CORS Setup, because it is needed.
@@ -912,5 +896,41 @@ if __name__ == '__main__':
     
     # Start AioHTTP server on port 4825, wait for connection
     logStringToFile('Server and AioHTTP started')
-    web.run_app(app, host='0.0.0.0', port=4825)
+    # web.run_app(app, host='0.0.0.0', port=4825)
+    runner = web.AppRunner(app)
     
+    await runner.setup()
+    
+    site = web.TCPSite(runner, '0.0.0.0', 4825)
+    await site.start() 
+        
+# Program start
+if __name__ == '__main__':
+    # Register Sigint handler
+    signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGTERM, sigint_handler)
+    
+    # Read configuration data into memory
+    readConfigurationFile()
+    
+    # Attempt to init audio
+    pyAudioInit()
+    
+    # Initialize vars
+    setInitalValues()
+    
+    
+    # Start seperate thread for broadcast packets
+    # broadcastThread = Thread(target=sendBroadcastPacketWhileTrue)
+    # broadcastThread.start()
+    
+    # Run aioHTTP in asyncronous mode forever
+    httpLoop = asyncio.new_event_loop()
+    asyncio.set_event_loop(httpLoop)
+    httpLoop.create_task(runHTTP())
+    # Run forever in seperate thread
+    httpThread = Thread(target=httpLoop.run_forever)
+    httpThread.start()
+    
+    # Initialize PyGame and continue to run in main thread
+    pygameInitializeBackgroundWaiting()

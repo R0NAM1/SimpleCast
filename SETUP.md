@@ -4,15 +4,19 @@ How to setup the SimpleCast receiver service.
     -- git clone https://github.com/R0NAM1/SimpleCast.git
 
 2. cd into SimpleCast, Install requirements
-    -- For debian packages, install the coturn, avahi and python3 package (sudo apt install coturn avahi-daemon python3)
-        -- Also install chrome for the Selenium driver to work (wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb), (sudo apt install ./google-chrome-stable_current_amd64.deb)
+    -- For debian packages, install the coturn, avahi and python3 package (sudo apt install coturn avahi-daemon python3 portaudio19-dev)
+        -- Also install chromium driver for the Selenium driver to work (sudo apt install chromium chromium-chromedriver)
  
     -- For Python Libraries, make a virtual environment (mkdir venv && python3 -m venv venv),
     activate it (source venv/bin/activate), and install from requirements.txt (pip3 install -r requirements.txt).
-    Exit the venv with 'deactivate'.
+
+    -- Install the zeroconf library with pip3 if your not on AARCH64, if so then building the wheel usually takes forever, so just install it from the one I provided in the repo, following your version of python (python3 --version, for example Python 3.11.2). (pip3 install ./zeroconf_aarch64_wheels/zeroconf-0.132.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl)
+
+    --Exit the venv with 'deactivate'.
 
 3. Setup receiver/simpleCastConfig.json however you like, make sure to assign either a static IP or a static leased one!
     -- If this is the first server in a LAN deployment, make the hostname 'simplecastdiscovery' and enable doDnsSdDiscovery for Auto Discovery in clients.
+    -- Go into backgrounds and either put in your own images or use a preloaded script
 
 4. Setup avahi to respond to simplecast.local
     -- Copy the provided simplecast-mdns.service to /etc/avahi/services/

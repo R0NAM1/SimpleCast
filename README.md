@@ -24,7 +24,8 @@ Features include:
 - Logging to local file, simplecast.log
 - Broadcast traffic for passive discovery and mDNS for active discovery (May make broadcast obselete)
 
-Imagined for use on a Le Potato board, along with case and fan for cooling and lifetime. You can find them on Amazon for around $50 with case and power supply.
+It can run on a Raspberry Pi or a Le Potato, but it runs much better on even the worst amd64 systems.
+Selenium may also not run well with extensions, so remove them as first step for troubleshooting.
 
 <img src="assets/server_link.png" alt="The open screen of the simplecast server, had the download link and the background is a tropical beach" width="800"/>
 
@@ -61,6 +62,8 @@ I've spent days figuring out any other in the browser solution, there is none.
 All you need to do is set `doDnsSdDiscovery` to true and have the hostname of the server be simplecastdiscovery and any client on the subnet should find it fine. 
 
 Only one SimpleCast server should have this hostname and this option enabled, make it the first one you setup on the subnet.
+
+Do note, HTTPS is NOT supported since this is a local LAN server, so HTTPS Only mode does not work (You would have to generate Certs and such, a lot more hassel)
 
 <img src="assets/server_pin.png" alt="The connecting screen of the simplecast server, showing a pin of 18067, background is of lavander" width="800"/>
 
