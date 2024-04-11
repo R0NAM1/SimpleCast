@@ -24,15 +24,33 @@ Features include:
 - Logging to local file, simplecast.log
 - Broadcast traffic for passive discovery and mDNS for active discovery (May make broadcast obselete)
 
-It can run on a Raspberry Pi or a Le Potato, but it runs much better on even the worst amd64 systems. I got around 20 fps on a Raspi 3B+ at 1024x768.
-
 Selenium may also not run well with extensions, so remove them as first step for troubleshooting.
 
 <img src="assets/server_link.png" alt="The open screen of the simplecast server, had the download link and the background is a tropical beach" width="800"/>
 
+## FPS
+The following are tables of FPS and Resolution data from certain hardware I tested this on, note FPS will always tank during slideshow fading.
+
+### Raspberry Pi 3B+ (BCM2837, 1GB Ram, VideoCore IV)
+| Resolution | Still Image FPS | Slideshow Fading FPS |
+| :--------: | :-------------: | :------------------: |
+| 640x480    | ~42 | ~18 |
+| 1024x768   | ~20 | ~8 |
+| 1280x720   | ~17 | ~5 |
+| 1920x1080  | ~7  | ~2 |
+
+### Lenovo G50-80 (i3-4030U, 8GB Ram, Haswell-ULT)
+| Resolution | Still Image FPS | Slideshow Fading FPS |
+| :--------: | :-------------: | :------------------: |
+| 640x480    | ~300 | ~50 |
+| 1024x768   | ~155 | ~30 |
+| 1280x720   | ~130 | ~24 |
+| 1366x768  | ~100  | ~21 |
+| 1920x1080  | ~66  | ~11 |
+
 ## Config Keys & Possible Values
 | Config Key | Meaning | Value Type | Value Example |
-| ---------- | ------- | ---------- | ------------- |
+| :--------: | :------ | :--------: | :-----------: |
 | `serverName` | The name that the server displays and broadcasts | String | "Conference Room 1" |
 | `usePINAuthentication` | Force PIN authentication or allow anybody to connect at anytime from anywhere | Boolean | true or false |
 | `allowAudioRedirection` | Allow clients to cast audio to the server | Boolean | true or false |
@@ -65,6 +83,8 @@ All you need to do is set `doDnsSdDiscovery` to true and have the hostname of th
 Only one SimpleCast server should have this hostname and this option enabled, make it the first one you setup on the subnet.
 
 Do note, HTTPS is NOT supported since this is a local LAN server, so HTTPS Only mode does not work (You would have to generate Certs and such, a lot more hassel)
+
+## Screenshots
 
 <img src="assets/server_pin.png" alt="The connecting screen of the simplecast server, showing a pin of 18067, background is of lavander" width="800"/>
 
