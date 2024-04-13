@@ -29,24 +29,24 @@ Selenium may also not run well with extensions, so remove them as first step for
 <img src="assets/server_link.png" alt="The open screen of the simplecast server, had the download link and the background is a tropical beach" width="800"/>
 
 ## FPS
-The following are tables of FPS and Resolution data from certain hardware I tested this on, note FPS will always tank during slideshow fading.
+The following are tables of FPS and Resolution data from certain hardware I tested this on, FPS used to tank until I implemented pygame.Surface.convert_alpha() (30% Increase!)
 
 ### Raspberry Pi 3B+ (BCM2837, 1GB Ram, VideoCore IV)
 | Resolution | Still Image FPS | Slideshow Fading FPS |
 | :--------: | :-------------: | :------------------: |
-| 640x480    | ~42 | ~18 |
-| 1024x768   | ~20 | ~8 |
-| 1280x720   | ~17 | ~5 |
-| 1920x1080  | ~7  | ~2 |
+| 640x480    | ~42 | ~29 |
+| 1024x768   | ~18 | ~12 |
+| 1280x720   | ~17 | ~9 |
+| 1920x1080  | ~6  | ~4 |
 
 ### Lenovo G50-80 (i3-4030U, 8GB Ram, Haswell-ULT)
 | Resolution | Still Image FPS | Slideshow Fading FPS |
 | :--------: | :-------------: | :------------------: |
-| 640x480    | ~300 | ~50 |
-| 1024x768   | ~155 | ~30 |
-| 1280x720   | ~130 | ~24 |
-| 1366x768  | ~100  | ~21 |
-| 1920x1080  | ~66  | ~11 |
+| 640x480    | ~300 | ~100 |
+| 1024x768   | ~155 | ~73 |
+| 1280x720   | ~130 | ~66 |
+| 1366x768  | ~100  | ~57 |
+| 1920x1080  | ~66  | ~32 |
 
 ## Config Keys & Possible Values
 | Config Key | Meaning | Value Type | Value Example |

@@ -132,7 +132,7 @@ def drawNextSlideShowFrameTick(displayInfo):
         
         # Make current background previous one (Cannot deepcopy, have to makes bytes)
         bkBytes = pygame.image.tobytes(myGlobals.backgroundToDraw, 'RGBA')
-        myGlobals.oldBackground = pygame.image.frombytes(bkBytes, (myGlobals.backgroundToDraw.get_width(), myGlobals.backgroundToDraw.get_height()), 'RGBA')
+        myGlobals.oldBackground = (pygame.image.frombytes(bkBytes, (myGlobals.backgroundToDraw.get_width(), myGlobals.backgroundToDraw.get_height()), 'RGBA')).convert_alpha()
         
         myGlobals.oldX = 0
         myGlobals.oldY = 0
