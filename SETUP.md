@@ -12,7 +12,7 @@ How to setup the SimpleCast receiver service.
     -- For Python Libraries, make a virtual environment (mkdir venv && python3 -m venv venv),
     activate it (source venv/bin/activate), and install from requirements.txt (pip3 install -r requirements.txt).
 
-    -- Install the zeroconf library with pip3 if your not on AARCH64, if so then building the wheel usually takes forever, so just install it from the one I provided in the repo, following your version of python (python3 --version, for example Python 3.11.2). (pip3 install ./zeroconf_aarch64_wheels/zeroconf-0.132.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl)
+    -- Install the zeroconf library with pip3 if your not on AARCH64, if so then building the wheel usually takes forever, go ahead and clone the following repo that already has them prebuilt (git clone https://github.com/R0NAM1/zeroconf_aarch64_wheels.git), and following your version of python (python3 --version, for example Python 3.11.2). (pip3 install ./zeroconf_aarch64_wheels/zeroconf-0.132.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl)
 
     --Exit the venv with 'deactivate'.
 
