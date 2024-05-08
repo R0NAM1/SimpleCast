@@ -48,6 +48,15 @@ The following are tables of FPS and Resolution data from certain hardware I test
 | 1366x768  | ~100  | ~57 |
 | 1920x1080  | ~66  | ~32 |
 
+### Dell Chromebook 11 Wolf 1.0 Running Debian (Celeron 2955I, 4GB Ram, Haswell-ULT)
+| Resolution | Still Image FPS | Slideshow Fading FPS |
+| :--------: | :-------------: | :------------------: |
+| 640x480    | ~275 | ~157 |
+| 1024x768   | ~138 | ~70 |
+| 1280x720   | ~115 | ~57 |
+| 1366x768  | ~90  | ~50 |
+| 1920x1080  | ~54  | ~25 |
+
 ## Config Keys & Possible Values
 | Config Key | Meaning | Value Type | Value Example |
 | :--------: | :------ | :--------: | :-----------: |
