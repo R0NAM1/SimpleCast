@@ -4,10 +4,10 @@ How to setup the SimpleCast receiver service.
     -- git clone https://github.com/R0NAM1/SimpleCast.git
 
 2. cd into SimpleCast, Install requirements
-    -- For debian packages, install the coturn, avahi and python3 package (sudo apt install coturn avahi-daemon python3 portaudio19-dev)
+    -- For debian packages, install the coturn, avahi and python3 package (sudo apt install coturn avahi-daemon python3 python3.11-venv portaudio19-dev)
         -- Also install chromium driver for the Selenium driver to work (sudo apt install chromium chromium-chromedriver)
 
-    -- You will probably have to modify the coturn systemd service at /lib/systemd/system/coturn.service to include 'ExecStartPre=/bin/sleep 15' under [Service] so it does not fail on boot
+    -- You will probably have to modify the coturn systemd service at /lib/systemd/system/coturn.service to include 'ExecStartPre=/bin/sleep 30' under [Service] so it does not fail on boot
  
     -- For Python Libraries, make a virtual environment (mkdir venv && python3 -m venv venv),
     activate it (source venv/bin/activate), and install from requirements.txt (pip3 install -r requirements.txt).

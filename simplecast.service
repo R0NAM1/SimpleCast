@@ -11,6 +11,7 @@ Restart=always
 RestartSec=1
 WorkingDirectory=/home/pi/SimpleCast/receiver
 User=pi
+ExecStartPre=/bin/sleep 60
 ExecStart=/home/pi/SimpleCast/venv/bin/python3 /home/pi/SimpleCast/receiver/receiverServer.py
 KillSignal=SIGKILL
 
