@@ -1,42 +1,34 @@
 {
-    "manifest_version": 3,
-    "name": "SimpleCast Client",
-    "version": "1.2",
-  
-    "description": "HTTP and WebRTC compliant Firefox extension for SimpleCast servers. https://github.com/R0NAM1/SimpleCast",
-  
-    "icons": {
-      "48": "logo-pallete-48.png",
-      "96": "logo-pallete-96.png"
-    },
-
-    "permissions": [
-      "activeTab"
-   ],
-
-   "host_permissions": [
+  "manifest_version": 3,
+  "name": "SimpleCast Client",
+  "version": "1.3",
+  "description": "HTTP and WebRTC compliant Firefox extension for SimpleCast servers. https://github.com/R0NAM1/SimpleCast",
+  "icons": {
+    "48": "logo-pallete-48.png",
+    "96": "logo-pallete-96.png"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
     "<all_urls>"
-   ],
-   
-   "background": {
-      "scripts": ["windowPopup.js"],
-      "type": "module"
-   },
-
-   "action": {
-      "default_icon": "logo-pallete-48.png",
-      "default_title": "Open SimpleCast UI"
-   },
-
-   "content_security_policy": {
+  ],
+  "background": {
+    "scripts": [
+      "windowPopup.js"
+    ],
+    "type": "module"
+  },
+  "action": {
+    "default_icon": "logo-pallete-48.png",
+    "default_title": "Open SimpleCast UI"
+  },
+  "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
-   },
-
-   "browser_specific_settings": {
+  },
+  "browser_specific_settings": {
     "gecko": {
       "id": "simpleCast@example.com"
     }
   }
-  
 }
-  
