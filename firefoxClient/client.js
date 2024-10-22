@@ -86,7 +86,12 @@ async function startWebRTCMirroring() {
                 width: { ideal: requestedWidth, max: requestedWidth },
                 height: { ideal: requestedHeight, max: requestedHeight }
             },
-            audio: true, // Set to true if you want to capture audio as well
+            audio: {
+                echoCancellation: false,
+                autoGainControl: false,
+                googAutoGainControl: false,
+                noiseSuppression: false
+            }, // Set to true if you want to capture audio as well
             surfaceSwitching: "include", // Allow user to switch displayMedia source
             systemAudio: "include" // Capture system audio, not individual tab audio
         });
@@ -98,7 +103,12 @@ async function startWebRTCMirroring() {
 
         mediaStream = await navigator.mediaDevices.getUserMedia({
             video: { width: requestedWidth, height: requestedHeight },
-            audio: true // Set to true if you want to capture audio as well
+            audio: {                
+                echoCancellation: false,
+                autoGainControl: false,
+                googAutoGainControl: false,
+                noiseSuppression: false
+            } // Set to true if you want to capture audio as well
         });
     }
 
@@ -179,6 +189,7 @@ async function startWebRTCMirroring() {
         });
     }).then(function() {
         var offer = pc.localDescription; // Send our offer to the server in a JSON format, we expect a raw ANSWER, not encapsulated,
+        
         console.log("Sending Offer")
         return fetch(serverIdTextURL, {
             body: 
@@ -213,6 +224,22 @@ async function startWebRTCMirroring() {
 
         var surDiv = document.getElementById('selectServerDiv');
         surDiv.appendChild(connectedText);
+
+        // setInterval(() => {
+        //     pc.getStats(null).then(stats => {
+        //       stats.forEach(report => {
+        //         if (report.type === 'outbound-rtp' && report.kind === 'video') {
+        //           console.log(`Frame rate: ${report.framesPerSecond}`);
+        //           console.log(`Bitrate: ${report.bitrate}`);
+        //           console.log(`Key: ${report.keyFramesEncoded}`);
+        //           console.log(`targetBitrate: ${report.targetBitrate}`);
+        //           console.log(`totalPacketSendDelay: ${report.totalPacketSendDelay}`);
+        //           console.log(`framesSent: ${report.framesSent}`);
+        //           console.log(report)
+        //         }
+        //       });
+        //     });
+        //   }, 1000);
     })
 
 
