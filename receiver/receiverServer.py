@@ -249,6 +249,10 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                         
             for rec in receivers:
                 if rec.track.kind == "audio":
+                    # Get the first few as fast as possible.
+                    for i in range(10):
+                        await asyncio.wait_for(rec.track.recv(), timeout=0.05)
+                        
                     while myGlobals.processFrames == True:
                         # Wrap in try statement, if Exception ignore
                         try:
@@ -279,10 +283,12 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             break
                             # myGlobals.pyAudioDevice.terminate()
 
-
+        async def run_process_audio_frames():
+            # Having video and audio in the same event loop effectively DDOSes the Video, doing this seems to at least make video network level quality.
+            await processAudioFrames()
 
         if myGlobals.allowAudioRedirection:
-            asyncio.create_task(processAudioFrames())
+            asyncio.create_task(asyncio.to_thread(asyncio.run, run_process_audio_frames()))
             asyncio.create_task(processVideoFrames())
         else:
             asyncio.create_task(processVideoFrames())
