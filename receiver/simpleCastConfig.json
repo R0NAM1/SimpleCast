@@ -15,6 +15,7 @@
     "whitelistArray": ["psk1", "psk2"],
     "enableWhitelist": false,
     "displayDebugStats": false,
-    "doDnsSdDiscovery": false
+    "doDnsSdDiscovery": false,
+    "pauseFreezeLastFrame": false
 }
   

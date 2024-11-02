@@ -401,6 +401,10 @@ def readConfigurationFile():
             ############
             # Load doDnsSdDiscovery
             myGlobals.doDnsSdDiscovery = jsonObject['doDnsSdDiscovery']
+            
+            ############
+            # Load pauseFreezeLastFrame
+            myGlobals.pauseFreezeLastFrame = jsonObject['pauseFreezeLastFrame']
                     
     except Exception as e:
         logStringToFile("Exception Reading From Config File, Follows: " + str(e))

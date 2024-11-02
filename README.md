@@ -77,7 +77,7 @@ The following are tables of FPS and Resolution data from certain hardware I test
 | `enableWhitelist` | Should the PSK whitelist be enabled? Ignores PIN Auth setting | Boolean | true of false |
 | `displayDebugStats` | Display debug stats on screen | Boolean | true or false |
 | `doDnsSdDiscovery` | Act as the indexer for all other advertising SimpleCast servers on LAN, must have hostname simplecastdiscovery | Boolean | true or false |
-
+| `pauseFreezeLastFrame` | If True then don't do anything except freeze the current frame and show time in the corner, no obscuring the frame | Boolean | true or false |
 <img src="assets/server_debug.png" alt="The open screen of the simplecast server, with debug info active, background is of a bird" width="800"/>
 
 ## Auto-Discovery

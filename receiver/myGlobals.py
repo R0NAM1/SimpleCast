@@ -57,6 +57,7 @@ castingToggle = True
 lastFlipTime = time.time()
 isScreenFlipped = False
 infoTextAlignment = 'flip'
+pauseFreezeLastFrame = False
 
 # Debug vars
 displayDebugStats = False

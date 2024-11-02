@@ -185,10 +185,6 @@ def drawPausedScreen(displayInfo):
     # blit surface at top left
     myGlobals.screenObject.blit(myGlobals.pauseSurface, (0, 0))
     
-    # Draw half opacity screen
-    blackCurtain = pygame.Surface((displayInfo.current_w, displayInfo.current_h))
-    blackCurtain.fill((0, 0, 0))
-    blackCurtain.set_alpha(200)
     
     # Draw time and date
     currentTime = datetime.now()
@@ -204,13 +200,27 @@ def drawPausedScreen(displayInfo):
     dateStringSurface = dateStringFont.render(dateString, True, (255, 255, 255))
     twelveHourStringSurface = twelveHourStringFont.render(twelveHourString, True, (255, 255, 255))
     
-    # Calculate positions
+    if not myGlobals.pauseFreezeLastFrame:
+        # Draw half opacity screen
+        blackCurtain = pygame.Surface((displayInfo.current_w, displayInfo.current_h))
+        blackCurtain.fill((0, 0, 0))
+        blackCurtain.set_alpha(200)
+    else:
+        # Draw half opacity screen for just time background
+        drawRoundedRectangle(((dateStringSurface.get_width() * 2) + 20, (twelveHourStringSurface.get_height() * 2) + 20),
+        (0 - dateStringSurface.get_width(), 0 - dateStringSurface.get_height()))
     
-    dateStringPositon = ((displayInfo.current_w / 2) - (dateStringSurface.get_width() / 2), (displayInfo.current_h / 2) - 20)
-    twelveHourStringPositon = ((displayInfo.current_w / 2) - (twelveHourStringSurface.get_width() / 2), (displayInfo.current_h / 2) + 20)
+    # Calculate positions
+    if myGlobals.pauseFreezeLastFrame:
+        dateStringPositon = ((10, 10))
+        twelveHourStringPositon = ((10, dateStringSurface.get_height() + 10))
+    else:    
+        dateStringPositon = ((displayInfo.current_w / 2) - (dateStringSurface.get_width() / 2), (displayInfo.current_h / 2) - 20)
+        twelveHourStringPositon = ((displayInfo.current_w / 2) - (twelveHourStringSurface.get_width() / 2), (displayInfo.current_h / 2) + 20)
     
     # Draw surfaces
-    myGlobals.screenObject.blit(blackCurtain, (0, 0))
+    if not myGlobals.pauseFreezeLastFrame:
+        myGlobals.screenObject.blit(blackCurtain, (0, 0))
     myGlobals.screenObject.blit(dateStringSurface, dateStringPositon)
     myGlobals.screenObject.blit(twelveHourStringSurface, twelveHourStringPositon)
 
