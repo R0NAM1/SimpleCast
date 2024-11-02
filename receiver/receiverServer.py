@@ -1,4 +1,4 @@
-import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors, signal, io, ipaddress
+import time, socket, json, os, random, struct, queue, ast, asyncio, pygame, sys, pyaudio, numpy, aiohttp_cors, signal, io, ipaddress, logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from threading import Thread, active_count
@@ -167,7 +167,6 @@ async def toggleCasting(commandRequest):
     else:
         return web.Response(content_type="text/html", status=401, text="response:notValidCommand")
 
-
 # Open screen and audio buffer port, with only accepting traffic from passed through IP address
 async def startReceivingScreenDataOverRTP(sdpObject):
     
@@ -197,10 +196,11 @@ async def startReceivingScreenDataOverRTP(sdpObject):
             # Add transceiver
             serverPeer.addTransceiver('audio', direction='recvonly')
             # Initialize pyaudio stream
+            pyAudioInit()
             pyFormat = pyaudio.paInt16
             pyChannels = 2
             pyRate = 48000
-            myGlobals.pyAudioStream = myGlobals.pyAudioDevice.open(format=pyFormat, channels=pyChannels, rate=pyRate, output=True, frames_per_buffer=9600)
+            myGlobals.pyAudioStream = myGlobals.pyAudioDevice.open(format=pyFormat, channels=pyChannels, rate=pyRate, output=True, frames_per_buffer=960)
             
         clientSdpOfferSessionDescription = RTCSessionDescription(sdpObjectText, 'offer')
             
@@ -215,8 +215,7 @@ async def startReceivingScreenDataOverRTP(sdpObject):
         # Schedule task to run to gather frames
         async def processVideoFrames():
                     
-            # Wait one second for sctp to establish
-            await asyncio.sleep(1)
+            await asyncio.sleep(0) # Talks to loop immediently?
             receivers = serverPeer.getReceivers()
             myGlobals.processFrames = True
             startTime = time.time()
@@ -241,35 +240,27 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             break
         
         async def processAudioFrames():
-            # Wait one second for sctp to establish
-            await asyncio.sleep(1)
+            await asyncio.sleep(0) # Talks to loop immediently?
             receivers = serverPeer.getReceivers()
             lastFrame = time.time()
             myGlobals.processFrames = True
                         
             for rec in receivers:
                 if rec.track.kind == "audio":
-                    # Get the first few as fast as possible.
-                    for i in range(10):
-                        await asyncio.wait_for(rec.track.recv(), timeout=0.05)
-                        
                     while myGlobals.processFrames == True:
                         # Wrap in try statement, if Exception ignore
                         try:
                             # Load video, wrap aronud timeout so we don't block forever, 5 seconds
                             latestAudioFrame = await asyncio.wait_for(rec.track.recv(), timeout=5.0)
-                            # print(latestAudioFrame)
-                            calc = time.time() - lastFrame
-                            lastFrame = time.time()
+                            # calc = time.time() - lastFrame
                             # print("Got audio frame, time diff: " + str(calc) + ", " + str(latestAudioFrame))
-                                                        
-                            # Write to pyAudioBufferQueue
-                            audioBuffer = numpy.frombuffer(latestAudioFrame.to_ndarray(), dtype=numpy.int16)
-                                    
+                            # lastFrame = time.time()
+                        
                             # Write to stream device if unpaused
                             if myGlobals.isPaused == False:
+                                audioBuffer = numpy.frombuffer(latestAudioFrame.to_ndarray(), dtype=numpy.int16)
                                 myGlobals.pyAudioStream.write(audioBuffer.tobytes())
-                            
+
                         except Exception as e:
                             # print("AudioMediaPlayer Failed, pass, " + str(e))
                             myGlobals.processFrames = False
@@ -279,20 +270,20 @@ async def startReceivingScreenDataOverRTP(sdpObject):
                             myGlobals.pyAudioStream.close()
                             # If audioPlayer fails close stream
                             await myGlobals.globalPcObject.close()
+                            try:
+                                myGlobals.pyAudioDevice.terminate()
+                            except:
+                                pass
+                            print(e)
                             # setInitalValues()
                             break
-                            # myGlobals.pyAudioDevice.terminate()
-
-        async def run_process_audio_frames():
-            # Having video and audio in the same event loop effectively DDOSes the Video, doing this seems to at least make video network level quality.
-            await processAudioFrames()
 
         if myGlobals.allowAudioRedirection:
-            asyncio.create_task(asyncio.to_thread(asyncio.run, run_process_audio_frames()))
+            asyncio.create_task(processAudioFrames())
             asyncio.create_task(processVideoFrames())
         else:
             asyncio.create_task(processVideoFrames())
-    
+
     
         # Return SDP
         return web.Response(content_type="text/html", text=serverPeer.localDescription.sdp)
@@ -916,11 +907,11 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, sigint_handler)
     signal.signal(signal.SIGTERM, sigint_handler)
     
+    # Enable debugging if wanted
+    # logging.basicConfig(level=logging.DEBUG)
+    
     # Read configuration data into memory
     readConfigurationFile()
-    
-    # Attempt to init audio
-    pyAudioInit()
     
     # Initialize vars
     setInitalValues()

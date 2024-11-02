@@ -1,4 +1,4 @@
-import time, socket, os, uuid, mss, json, asyncio, threading, aiohttp, tracemalloc
+import time, socket, os, uuid, mss, json, asyncio, threading, aiohttp, tracemalloc, logging
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCConfiguration, RTCIceServer, RTCDataChannel, RTCRtpCodecParameters
 from aiortc.mediastreams import VideoFrame
 from aiortc.contrib.media import MediaPlayer, MediaBlackhole, MediaStreamTrack, MediaRelay
@@ -53,7 +53,7 @@ async def startRTCPeering(serverIpAddress):
     
     # Add media tracks
     # TEMP, use video mp4 for now, change to mss later
-    tmpPath = ('out.webm') # Pootis Engage, great test video
+    tmpPath = ('pootis.webm') # Pootis Engage, great test video
     # NEVERMIND, any LARGE video file causes Memory 'leak', more of frames staying in memory
     # NEVERMIND THE SEQUEL, don't call two different MediaPlay instances for getting seperate tracks, causes memory fuckery
     mediaPlayer = MediaPlayer(tmpPath)
@@ -426,6 +426,8 @@ def programStart():
     global globalPcObject
     # Check local config for static server addresses and this clients PSK
     readConfigFile()
+    
+    logging.basicConfig(level=logging.DEBUG)
     
     # Clear screen
     clearConsoleScreen()
