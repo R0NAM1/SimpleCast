@@ -1,0 +1,17 @@
+x8b - 10001011 - (I|P|L|F|B|E|V|Z) - VP9 Payload descriptor
+x8d - Picture ID 
+x86 - Extended Picture ID
+x18 - V is set so Scalability Structure is present, N_S + 1 is one frame. (N_S |Y|G|-|-|-) 00011000
+x05 - Y WIDTH
+x00 - Y HEIGHT
+x02 - PG Description
+x9c - 10011100 - 156 - TID |U| R |-|-   
+x01 - 00000001 - P_DIFF
+x14 - 00010100 - 20 - TID |U| R |-|-
+x01 - 00000001 - P_DIFF
+x82I - 10000010 - Weird encoding, likely RTP Start! Profile 2?
+x83B
+x00O
+...  
+...
+...
