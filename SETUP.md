@@ -14,6 +14,10 @@ How to setup the SimpleCast receiver service.
 
     -- Install the zeroconf library with pip3 if your not on AARCH64, if so then building the wheel usually takes forever, go ahead and clone the following repo that already has them prebuilt (git clone https://github.com/R0NAM1/zeroconf_aarch64_wheels.git), and following your version of python (python3 --version, for example Python 3.11.2). (pip3 install ./zeroconf_aarch64_wheels/zeroconf-0.132.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl)
 
+    -- Enable VP9 Support (OPTIONAL):
+        I've recently been able to implement VP9 codec support in AioRTC, although I'm still waiting for it to be merged you can still enjoy the benefits! While still in the venv, go to the root of Simplecast and 'git clone https://github.com/R0NAM1/aiortc', then 'cd aiortc', 'pip3 install .' 
+        When running pip3 install that should override the default AioRTC version and VP9 should now be working.
+
     --Exit the venv with 'deactivate'.
 
 3. Setup receiver/simpleCastConfig.json however you like, make sure to assign either a static IP or a static leased one!
